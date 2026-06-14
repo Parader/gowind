@@ -22,7 +22,7 @@ router.get("/", authMiddleware, async (req: Request, res: Response) => {
         type: "setup",
     });
 
-    const data = (doc?.data as SetupData) ?? { locations: [], preferences: null };
+    const data = (doc?.data as unknown as SetupData | undefined) ?? { locations: [], preferences: null };
     const locations = Array.isArray(data.locations)
         ? data.locations.filter((l) => typeof l.lat === "number" && typeof l.lng === "number")
         : [];

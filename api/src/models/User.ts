@@ -1,4 +1,4 @@
-import mongoose, { Schema, model } from "mongoose";
+import mongoose, { Schema, model, type Model } from "mongoose";
 import bcrypt from "bcryptjs";
 
 export interface IOAuthAccount {
@@ -20,6 +20,12 @@ export interface IUser {
     updatedAt: Date;
 }
 
+interface IUserMethods {
+    comparePassword(candidate: string): Promise<boolean>;
+}
+
+type UserModel = Model<IUser, {}, IUserMethods>;
+
 const OAuthAccountSchema = new Schema<IOAuthAccount>(
     {
         provider: { type: String, required: true },
@@ -31,7 +37,7 @@ const OAuthAccountSchema = new Schema<IOAuthAccount>(
     { _id: false }
 );
 
-const UserSchema = new Schema<IUser>(
+const UserSchema = new Schema<IUser, UserModel, IUserMethods>(
     {
         email: { type: String, required: true, unique: true },
         name: { type: String },
@@ -54,4 +60,4 @@ UserSchema.methods.comparePassword = function (candidate: string): Promise<boole
     return bcrypt.compare(candidate, this.password || "");
 };
 
-export const User = model<IUser>("User", UserSchema);
+export const User = model<IUser, UserModel>("User", UserSchema);
