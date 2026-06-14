@@ -1,12 +1,11 @@
+import { Heart } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 
 const footerColumns = [
     {
-        title: "Product",
+        title: "Pages",
         links: [
-            { label: "Go Time", href: "/go-time" },
-            { label: "Locations", href: "/locations" },
-            { label: "Preferences", href: "/preferences" },
+            { label: "Home", href: "/" },
             { label: "About", href: "/about" },
         ],
     },
@@ -23,30 +22,34 @@ export const Footer = () => {
     const currentYear = new Date().getFullYear();
     const donateUrl =
         import.meta.env.VITE_STRIPE_DONATE_URL?.trim() || import.meta.env.VITE_DONATE_URL?.trim();
-    const columns = donateUrl
-        ? [
-              ...footerColumns,
-              {
-                  title: "Support",
-                  links: [{ label: "Say thanks", href: donateUrl, external: true }],
-              },
-          ]
-        : footerColumns;
 
     return (
         <footer className="glass-strong border-t border-white/10">
             <div className="mx-auto max-w-container px-4 py-12 md:px-8 md:py-16">
                 <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between md:gap-8">
-                    <div className="flex flex-col gap-3">
+                    <div className="flex max-w-sm flex-col items-start gap-3">
                         <span className="text-lg font-semibold text-primary">GoWind</span>
                         <p className="max-w-xs text-sm text-tertiary">
                             Know when and where to go. Find your next good wind window.
                         </p>
                         <p className="mt-2 text-xs text-quaternary">© {currentYear} GoWind. Free to use.</p>
+                        {donateUrl ? (
+                            <Button
+                                size="sm"
+                                color="secondary"
+                                href={donateUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                iconLeading={Heart}
+                                className="mt-3 rounded-full border border-[#E1707A]/40 bg-[#E1707A] !text-white shadow-xs ring-0 hover:!bg-[#E4767E] hover:!text-white [&_[data-icon]]:!text-white"
+                            >
+                                Donate
+                            </Button>
+                        ) : null}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:gap-12">
-                        {columns.map((column) => (
+                    <div className="grid grid-cols-2 gap-8 md:gap-12">
+                        {footerColumns.map((column) => (
                             <div key={column.title} className="flex flex-col gap-3">
                                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-quaternary">
                                     {column.title}
@@ -58,8 +61,6 @@ export const Footer = () => {
                                                 color="link-gray"
                                                 size="sm"
                                                 href={link.href}
-                                                target={"external" in link && link.external ? "_blank" : undefined}
-                                                rel={"external" in link && link.external ? "noopener noreferrer" : undefined}
                                                 className="text-sm font-medium"
                                             >
                                                 {link.label}

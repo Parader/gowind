@@ -371,17 +371,19 @@ export const Landing03 = () => {
                 {/* Say thanks — white header on this band only */}
                 <section className="border-b border-secondary bg-brand-section_subtle" data-header-contrast="light">
                     <div className="mx-auto max-w-container px-4 py-16 md:px-8 md:py-20">
-                        <Reveal className="max-w-xl">
-                            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-secondary_on-brand">
-                                SUPPORT
-                            </p>
-                            <h2 className="mt-2 text-display-xs font-semibold text-primary_on-brand md:text-display-sm">
-                                Say thanks
-                            </h2>
-                            <p className="mt-4 text-md leading-relaxed text-tertiary_on-brand md:text-lg">
-                                GoWind is built as a passion project. If it helps you plan safer, more enjoyable days outside, you
-                                are welcome to chip in — it keeps the lights on and the forecasts flowing.
-                            </p>
+                        <Reveal className="relative z-10 flex max-w-xl flex-col items-stretch rounded-2xl border border-white/15 bg-white/10 p-6 shadow-lg backdrop-blur-sm sm:items-start md:p-8">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-secondary_on-brand">
+                                    SUPPORT
+                                </p>
+                                <h2 className="mt-2 text-display-xs font-semibold text-primary_on-brand md:text-display-sm">
+                                    Say thanks
+                                </h2>
+                                <p className="mt-4 text-md leading-relaxed text-tertiary_on-brand md:text-lg">
+                                    GoWind is built as a passion project. If it helps you plan safer, more enjoyable days outside, you
+                                    are welcome to chip in — it keeps the lights on and the forecasts flowing.
+                                </p>
+                            </div>
                             {donateUrl ? (
                                 <Button
                                     size="md"
@@ -390,7 +392,7 @@ export const Landing03 = () => {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     iconLeading={Heart}
-                                    className="mt-8 w-fit rounded-md border border-[#E1707A]/40 bg-[#E1707A] !px-5 !text-white shadow-[0_2px_0_rgba(0,0,0,0.06),0_4px_14px_rgba(225,112,122,0.26)] ring-0 transition-[background-color,box-shadow] duration-200 ease-out hover:!border-[#E89AA2]/55 hover:!bg-[#E4767E] hover:!text-white hover:shadow-[0_2px_0_rgba(0,0,0,0.06),0_4px_14px_rgba(225,112,122,0.22),0_0_0_1px_rgba(225,112,122,0.08),0_0_16px_rgba(225,112,122,0.22),0_0_28px_rgba(225,112,122,0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F0A8AE] active:!bg-[#D8636E] active:!text-white dark:border-[#E1707A]/40 dark:!bg-[#E1707A] dark:hover:!border-[#E89AA2]/55 dark:hover:!bg-[#E4767E] dark:hover:shadow-[0_2px_0_rgba(0,0,0,0.06),0_4px_14px_rgba(225,112,122,0.22),0_0_0_1px_rgba(225,112,122,0.08),0_0_16px_rgba(225,112,122,0.22),0_0_28px_rgba(225,112,122,0.08)] [&_[data-icon]]:!text-white hover:[&_[data-icon]]:!text-white"
+                                    className="relative z-10 mt-8 w-full rounded-md border border-[#E1707A]/40 bg-[#E1707A] !px-5 !text-white shadow-[0_2px_0_rgba(0,0,0,0.06),0_4px_14px_rgba(225,112,122,0.26)] ring-0 transition-[background-color,box-shadow] duration-200 ease-out hover:!border-[#E89AA2]/55 hover:!bg-[#E4767E] hover:!text-white hover:shadow-[0_2px_0_rgba(0,0,0,0.06),0_4px_14px_rgba(225,112,122,0.22),0_0_0_1px_rgba(225,112,122,0.08),0_0_16px_rgba(225,112,122,0.22),0_0_28px_rgba(225,112,122,0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F0A8AE] active:!bg-[#D8636E] active:!text-white dark:border-[#E1707A]/40 dark:!bg-[#E1707A] dark:hover:!border-[#E89AA2]/55 dark:hover:!bg-[#E4767E] dark:hover:shadow-[0_2px_0_rgba(0,0,0,0.06),0_4px_14px_rgba(225,112,122,0.22),0_0_0_1px_rgba(225,112,122,0.08),0_0_16px_rgba(225,112,122,0.22),0_0_28px_rgba(225,112,122,0.08)] sm:w-fit [&_[data-icon]]:!text-white hover:[&_[data-icon]]:!text-white"
                                 >
                                     Donate
                                 </Button>
