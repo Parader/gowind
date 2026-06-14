@@ -44,6 +44,16 @@ const TIME_OF_DAY_OPTIONS = [
     { id: "anytime", label: "Anytime", start: 0, end: 24 },
 ] as const;
 
+type PreferredTimeBlock = { id: string; label: string; start: number; end: number };
+
+function normalizePreferredTimeBlocks(blocks: PreferredTimeBlock[]): PreferredTimeBlock[] {
+    const valid = blocks.filter((b) => TIME_OF_DAY_OPTIONS.some((o) => o.id === b.id));
+    if (valid.length <= 1) return valid;
+
+    const specificBlocks = valid.filter((b) => b.id !== "anytime");
+    return specificBlocks.length > 0 ? specificBlocks : valid.slice(0, 1);
+}
+
 export type PreferenceSectionId = "wind" | "altitude" | "comfort" | "timing";
 
 const PREFERENCE_SECTIONS: {
@@ -159,14 +169,12 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
     const [maxPrecipitationProbabilityPercent, setMaxPrecipitationProbabilityPercent] =
         useState(preferences?.maxPrecipitationProbabilityPercent ?? 20);
 
-    const [preferredTimeBlocks, setPreferredTimeBlocks] = useState<
-        Array<{ id: string; label: string; start: number; end: number }>
-    >(() => {
+    const [preferredTimeBlocks, setPreferredTimeBlocks] = useState<PreferredTimeBlock[]>(() => {
         if (preferences?.preferredTimeBlocks?.length) {
-            const filtered = preferences.preferredTimeBlocks.filter((b) =>
+            const filtered = preferences.preferredTimeBlocks.filter((b): b is PreferredTimeBlock =>
                 TIME_OF_DAY_OPTIONS.some((o) => o.id === b.id)
             );
-            if (filtered.length > 0) return filtered;
+            if (filtered.length > 0) return normalizePreferredTimeBlocks(filtered);
         }
         const old = preferences?.preferredTimeOfDay ?? "anytime";
         const opt =
@@ -195,10 +203,10 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
             preferences.maxPrecipitationProbabilityPercent ?? 20
         );
         if (preferences.preferredTimeBlocks?.length) {
-            const filtered = preferences.preferredTimeBlocks.filter((b) =>
+            const filtered = preferences.preferredTimeBlocks.filter((b): b is PreferredTimeBlock =>
                 TIME_OF_DAY_OPTIONS.some((o) => o.id === b.id)
             );
-            if (filtered.length > 0) setPreferredTimeBlocks(filtered);
+            if (filtered.length > 0) setPreferredTimeBlocks(normalizePreferredTimeBlocks(filtered));
         }
         setMinSessionLengthMinutes(preferences.minSessionLengthMinutes ?? 60);
     }, [preferences]);
@@ -245,7 +253,7 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
         maxTempC,
         useFeelsLikeTemp,
         maxPrecipitationProbabilityPercent,
-        preferredTimeBlocks,
+        preferredTimeBlocks: normalizePreferredTimeBlocks(preferredTimeBlocks),
         minSessionLengthMinutes,
         sports: sportsFromParent ?? preferences?.sports,
     });
@@ -612,18 +620,23 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
                                                     onClick={() => {
                                                         if (isSelected) {
                                                             setPreferredTimeBlocks((prev) =>
-                                                                prev.filter((b) => b.id !== opt.id)
+                                                                normalizePreferredTimeBlocks(prev.filter((b) => b.id !== opt.id))
                                                             );
                                                         } else {
-                                                            setPreferredTimeBlocks((prev) => [
-                                                                ...prev.filter((b) => b.id !== opt.id),
-                                                                {
-                                                                    id: opt.id,
-                                                                    label: opt.label,
-                                                                    start: opt.start,
-                                                                    end: opt.end === 24 ? 24 : opt.end,
-                                                                },
-                                                            ]);
+                                                            const nextBlock = {
+                                                                id: opt.id,
+                                                                label: opt.label,
+                                                                start: opt.start,
+                                                                end: opt.end === 24 ? 24 : opt.end,
+                                                            };
+                                                            setPreferredTimeBlocks((prev) =>
+                                                                opt.id === "anytime"
+                                                                    ? [nextBlock]
+                                                                    : normalizePreferredTimeBlocks([
+                                                                          ...prev.filter((b) => b.id !== opt.id && b.id !== "anytime"),
+                                                                          nextBlock,
+                                                                      ])
+                                                            );
                                                         }
                                                     }}
                                                     className={cx(

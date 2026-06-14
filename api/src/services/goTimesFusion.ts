@@ -160,6 +160,24 @@ function isInPreferredTimeBlocks(hourLocal: number, blocks: Array<{ start: numbe
     return false;
 }
 
+function normalizePreferredTimeBlocks(
+    blocks: Array<{ start: number; end: number }> | undefined
+): Array<{ start: number; end: number }> {
+    const valid = (blocks ?? []).filter(
+        (b) =>
+            Number.isFinite(b.start) &&
+            Number.isFinite(b.end) &&
+            b.start >= 0 &&
+            b.start < 24 &&
+            b.end > b.start &&
+            b.end <= 24
+    );
+    if (valid.length <= 1) return valid;
+
+    const specificBlocks = valid.filter((b) => !(b.start <= 0 && b.end >= 24));
+    return specificBlocks.length > 0 ? specificBlocks : valid.slice(0, 1);
+}
+
 /** Clock hour (0–23) as encoded in the forecast ISO (location-local, not server TZ). */
 export function hourInForecastDisplay(displayIso: string): number {
     const m = displayIso.match(/T(\d{1,2}):/);
@@ -180,9 +198,10 @@ function whichPreferredBlock(
 }
 
 function softTimeScore(sliceTimeIso: string, blocks: Array<{ start: number; end: number }>): number {
-    if (!blocks?.length) return 1;
+    const normalizedBlocks = normalizePreferredTimeBlocks(blocks);
+    if (!normalizedBlocks.length) return 1;
     const hourLocal = hourInForecastDisplay(sliceTimeIso);
-    return isInPreferredTimeBlocks(hourLocal, blocks) ? 1 : 0.15;
+    return isInPreferredTimeBlocks(hourLocal, normalizedBlocks) ? 1 : 0.15;
 }
 
 /**
@@ -646,6 +665,9 @@ export interface RawFusionWindow {
 }
 
 const MAX_GAP_MINUTES = 90;
+const MAX_PRECISION_EXTRA_HOURS = 1;
+const MAX_PRECISION_WINDOWS_PER_CHAIN = 3;
+const PRECISION_SCORE_DROP_TOLERANCE = 0.06;
 
 /**
  * YYYY-MM-DD from the forecast hour string (location-local calendar from providers).
@@ -712,6 +734,67 @@ function toRawWindow(run: FusedHour[]): RawFusionWindow {
     };
 }
 
+function windowDurationMs(run: FusedHour[]): number {
+    if (run.length === 0) return 0;
+    const startMs = new Date(run[0].timestampUtc).getTime();
+    const endMs = new Date(run[run.length - 1].timestampUtc).getTime() + 3600e3;
+    return endMs - startMs;
+}
+
+function precisionWindowRank(run: FusedHour[], minHourCount: number): number {
+    const suits = run.map((r) => r.suitabilityScore);
+    const rels = run.map((r) => r.reliabilityScore);
+    const avgSuit = suits.reduce((a, b) => a + b, 0) / suits.length;
+    const minSuit = Math.min(...suits);
+    const avgRel = rels.reduce((a, b) => a + b, 0) / rels.length;
+    const scoreSpread = Math.max(...suits) - minSuit;
+    const extraHours = Math.max(0, run.length - minHourCount);
+
+    return avgSuit * 0.58 + minSuit * 0.28 + avgRel * 0.1 - scoreSpread * 0.04 - extraHours * 0.015;
+}
+
+function pickPreciseWindowsFromChain(chain: FusedHour[], minDurationMs: number): RawFusionWindow[] {
+    if (windowDurationMs(chain) < minDurationMs) return [];
+
+    const minHourCount = Math.max(1, Math.ceil(minDurationMs / 3600e3));
+    const maxHourCount = Math.min(chain.length, minHourCount + MAX_PRECISION_EXTRA_HOURS);
+    const candidates: Array<{ start: number; end: number; run: FusedHour[]; rank: number }> = [];
+
+    for (let start = 0; start < chain.length; start++) {
+        for (let count = minHourCount; count <= maxHourCount && start + count <= chain.length; count++) {
+            const run = chain.slice(start, start + count);
+            if (windowDurationMs(run) < minDurationMs) continue;
+            candidates.push({
+                start,
+                end: start + count - 1,
+                run,
+                rank: precisionWindowRank(run, minHourCount),
+            });
+        }
+    }
+
+    candidates.sort((a, b) => {
+        if (Math.abs(b.rank - a.rank) > 1e-6) return b.rank - a.rank;
+        if (a.run.length !== b.run.length) return a.run.length - b.run.length;
+        return new Date(a.run[0].timestampUtc).getTime() - new Date(b.run[0].timestampUtc).getTime();
+    });
+
+    const bestRank = candidates[0]?.rank;
+    if (bestRank == null) return [];
+
+    const picked: typeof candidates = [];
+    for (const candidate of candidates) {
+        if (picked.length >= MAX_PRECISION_WINDOWS_PER_CHAIN) break;
+        if (candidate.rank < bestRank - PRECISION_SCORE_DROP_TOLERANCE) continue;
+        const overlaps = picked.some((p) => candidate.start <= p.end && candidate.end >= p.start);
+        if (!overlaps) picked.push(candidate);
+    }
+
+    return picked
+        .sort((a, b) => new Date(a.run[0].timestampUtc).getTime() - new Date(b.run[0].timestampUtc).getTime())
+        .map((candidate) => toRawWindow(candidate.run));
+}
+
 export function groupFusedHoursIntoWindows(
     hours: FusedHour[],
     prefs: FusionPreferences,
@@ -719,7 +802,7 @@ export function groupFusedHoursIntoWindows(
     nowMs: number
 ): RawFusionWindow[] {
     const minDurationMs = Math.max(15, minSessionMinutes) * 60 * 1000;
-    const blocks = prefs.preferredTimeBlocks;
+    const blocks = normalizePreferredTimeBlocks(prefs.preferredTimeBlocks);
     const sorted = [...hours]
         .filter((h) => new Date(h.timestampUtc).getTime() >= nowMs - 60 * 60 * 1000)
         .sort((a, b) => new Date(a.timestampUtc).getTime() - new Date(b.timestampUtc).getTime());
@@ -736,9 +819,7 @@ export function groupFusedHoursIntoWindows(
 
         const flush = () => {
             if (cur.length === 0) return;
-            const startMs = new Date(cur[0].timestampUtc).getTime();
-            const endMs = new Date(cur[cur.length - 1].timestampUtc).getTime() + 3600e3;
-            if (endMs - startMs >= minDurationMs) runs.push([...cur]);
+            if (windowDurationMs(cur) >= minDurationMs) runs.push([...cur]);
             cur = [];
         };
 
@@ -766,7 +847,7 @@ export function groupFusedHoursIntoWindows(
 
         return runs
             .flatMap((run) => splitHoursByDayAndBlock(run, blocks))
-            .map(toRawWindow);
+            .flatMap((chain) => pickPreciseWindowsFromChain(chain, minDurationMs));
     };
 
     for (const minConf of FUSION_CONFIG.WINDOW_CONFIDENCE_THRESHOLDS) {
@@ -775,7 +856,8 @@ export function groupFusedHoursIntoWindows(
     }
 
     /** No run met duration at any threshold: extend best contiguous strip around top hour */
-    const ranked = [...sorted].sort((a, b) => b.suitabilityScore - a.suitabilityScore);
+    const fallbackPool = blocks.length > 0 ? sorted.filter(hourAllowedInWindows) : sorted;
+    const ranked = [...fallbackPool].sort((a, b) => b.suitabilityScore - a.suitabilityScore);
     const seed = ranked[0];
     if (!seed) return [];
 
@@ -809,10 +891,7 @@ export function groupFusedHoursIntoWindows(
     const dayChains = splitHoursByDayAndBlock(contiguous, blocks);
     const fallbackWindows: RawFusionWindow[] = [];
     for (const chain of dayChains) {
-        if (chain.length < 2) continue;
-        const rw = toRawWindow(chain);
-        const span = new Date(rw.endTime).getTime() - new Date(rw.startTime).getTime();
-        if (span >= minDurationMs) fallbackWindows.push(rw);
+        fallbackWindows.push(...pickPreciseWindowsFromChain(chain, minDurationMs));
     }
     if (fallbackWindows.length > 0) return fallbackWindows;
 
