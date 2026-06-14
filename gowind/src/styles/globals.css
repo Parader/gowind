@@ -1,0 +1,146 @@
+@import "tailwindcss";
+@import "./theme.css";
+@import "./typography.css";
+
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+/* Modern glassmorphism: alpha gradients + neutral tint + modest saturate + light-catcher edges */
+/* Uses color-mix for neutral (non-blue) tint; gradient mimics physical glass thickness */
+@utility glass {
+    background: linear-gradient(
+        135deg,
+        color-mix(in oklch, white 14%, transparent) 0%,
+        color-mix(in oklch, white 4%, transparent) 100%
+    );
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+    backdrop-filter: blur(16px) saturate(120%);
+    border: 1px solid color-mix(in oklch, white 18%, transparent);
+    box-shadow:
+        0 4px 24px -1px rgb(0 0 0 / 0.06),
+        inset 0 1px 0 0 color-mix(in oklch, white 30%, transparent);
+}
+
+@utility glass-strong {
+    background: linear-gradient(
+        135deg,
+        color-mix(in oklch, white 18%, transparent) 0%,
+        color-mix(in oklch, white 6%, transparent) 100%
+    );
+    -webkit-backdrop-filter: blur(20px) saturate(130%);
+    backdrop-filter: blur(20px) saturate(130%);
+    border: 1px solid color-mix(in oklch, white 24%, transparent);
+    box-shadow:
+        0 8px 32px -2px rgb(0 0 0 / 0.08),
+        inset 0 1px 0 0 color-mix(in oklch, white 35%, transparent);
+}
+
+.dark-mode .glass {
+    background: linear-gradient(
+        135deg,
+        color-mix(in oklch, white 8%, transparent) 0%,
+        color-mix(in oklch, white 2%, transparent) 100%
+    );
+    border-color: color-mix(in oklch, white 10%, transparent);
+    box-shadow:
+        0 4px 24px -1px rgb(0 0 0 / 0.25),
+        inset 0 1px 0 0 color-mix(in oklch, white 6%, transparent);
+}
+
+.dark-mode .glass-strong {
+    background: linear-gradient(
+        135deg,
+        color-mix(in oklch, white 12%, transparent) 0%,
+        color-mix(in oklch, white 3%, transparent) 100%
+    );
+    border-color: color-mix(in oklch, white 14%, transparent);
+}
+
+/* Fallback for reduced motion / reduced transparency preferences */
+@media (prefers-reduced-transparency: reduce) {
+    .glass,
+    .glass-strong {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    .glass {
+        background: rgb(255 255 255 / 0.9);
+    }
+    .glass-strong {
+        background: rgb(255 255 255 / 0.95);
+    }
+    .dark-mode .glass {
+        background: rgb(20 25 35 / 0.95);
+    }
+    .dark-mode .glass-strong {
+        background: rgb(25 30 42 / 0.98);
+    }
+}
+
+@utility scrollbar-hide {
+    /* For Webkit-based browsers (Chrome, Safari and Opera) */
+    &::-webkit-scrollbar {
+        display: none;
+        -webkit-appearance: none;
+    }
+
+    /* For IE, Edge and Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+@utility transition-inherit-all {
+    transition-property: inherit;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+/* Outfit for titles (text-display-* classes) */
+[class*="text-display-"] {
+    font-family: var(--font-display);
+}
+
+html,
+body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-variant-ligatures: contextual;
+    font-variant-ligatures: contextual;
+    -webkit-font-kerning: normal;
+    font-kerning: normal;
+}
+
+/* Hide the default expand arrow on Safari.  */
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Hide default arrows from number inputs. */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Hide the default clear button (X) from search inputs. */
+input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}
+
+/* Hide the default outline on chart elements. */
+.recharts-surface,
+.recharts-surface g,
+.recharts-surface path {
+    outline: none;
+}

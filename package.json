@@ -1,0 +1,14 @@
+{
+    "name": "tempest",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "dev:all": "concurrently --names api,gowind \"dotenv -e .env -- npm run dev --prefix api\" \"npm run dev --prefix gowind\"",
+        "dev:api": "dotenv -e .env -- npm run dev --prefix api",
+        "dev:gowind": "npm run dev --prefix gowind"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.0",
+        "dotenv-cli": "^7.4.2"
+    }
+}
