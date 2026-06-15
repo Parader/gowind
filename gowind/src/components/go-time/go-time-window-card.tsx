@@ -77,6 +77,14 @@ function formatHourClock(iso: string): string {
     }).format(d);
 }
 
+function displayStart(w: GoTimeWindow): string {
+    return w.displayStartTime ?? w.startTime;
+}
+
+function displayEnd(w: GoTimeWindow): string {
+    return w.displayEndTime ?? w.endTime;
+}
+
 /**
  * Windy uses UTC forecast steps 00,03,…,21; we snap window start to the nearest step.
  * Returns URL param `YYYY-MM-DD-HH` (UTC forecast step).
@@ -816,7 +824,7 @@ export function GoTimeWindowCard({
 
     const buildShareText = () => {
         const where = (w.locationName ?? "").trim();
-        const when = `${formatWindowDayLabel(w.startTime)} ${formatTimeRange(w.startTime, w.endTime)}`;
+        const when = `${formatWindowDayLabel(displayStart(w))} ${formatTimeRange(displayStart(w), displayEnd(w))}`;
         return `GoWind flying window${where ? ` at ${where}` : ""}: ${when}`;
     };
 
@@ -869,7 +877,7 @@ export function GoTimeWindowCard({
                                 <p className="text-sm font-semibold text-secondary">{locationLine}</p>
                             ) : showDay ? (
                                 <p className="text-sm font-semibold text-secondary">
-                                    {formatWindowDayLabel(w.startTime)}
+                                    {formatWindowDayLabel(displayStart(w))}
                                 </p>
                             ) : null}
                             <p className={cx("text-sm font-semibold sm:text-base", qualityClass)}>
@@ -878,7 +886,7 @@ export function GoTimeWindowCard({
                         </div>
                         {showLocation && locationLine && showDay ? (
                             <p className="mt-0.5 text-xs font-medium text-tertiary">
-                                {formatWindowDayLabel(w.startTime)}
+                                {formatWindowDayLabel(displayStart(w))}
                             </p>
                         ) : null}
                     </div>
@@ -916,7 +924,7 @@ export function GoTimeWindowCard({
                     </div>
                 </div>
                 <p className="text-xl font-bold tabular-nums tracking-tight text-primary sm:text-2xl">
-                    {formatTimeRange(w.startTime, w.endTime)}
+                    {formatTimeRange(displayStart(w), displayEnd(w))}
                 </p>
             </div>
 

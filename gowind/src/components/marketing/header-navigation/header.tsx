@@ -7,7 +7,6 @@ import { Button } from "@/components/base/buttons/button";
 import { ThemeSwitcher } from "@/components/base/theme-switcher/theme-switcher";
 import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import { GoWindLogoMinimal } from "@/components/foundations/logo/gowind-logo-minimal";
-import { DropdownMenuSimple } from "@/components/marketing/header-navigation/dropdown-header-navigation";
 import { HeaderProfileMenu } from "@/components/marketing/header-navigation/header-profile-menu";
 import { useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
@@ -20,23 +19,14 @@ type HeaderNavItem = {
     menu?: ReactNode;
 };
 
-const headerNavItems: HeaderNavItem[] = [
-    { label: "Products", href: "/products", menu: <DropdownMenuSimple /> },
-    { label: "Services", href: "/Services", menu: <DropdownMenuSimple /> },
-    { label: "Pricing", href: "/pricing" },
-    { label: "Resources", href: "/resources", menu: <DropdownMenuSimple /> },
+const publicNavItems: HeaderNavItem[] = [
+    { label: "Home", href: "/" },
     { label: "About", href: "/about" },
 ];
 
-const footerNavItems = [
-    { label: "About us", href: "/" },
-    { label: "Press", href: "/products" },
-    { label: "Careers", href: "/resources" },
-    { label: "Legal", href: "/pricing" },
-    { label: "Support", href: "/pricing" },
-    { label: "Contact", href: "/pricing" },
-    { label: "Sitemap", href: "/pricing" },
-    { label: "Cookie settings", href: "/pricing" },
+const legalNavItems: HeaderNavItem[] = [
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms", href: "/terms" },
 ];
 
 const MobileNavItem = (props: { className?: string; label: string; href?: string; children?: ReactNode }) => {
@@ -88,8 +78,8 @@ const MobileFooter = () => {
                 <ThemeSwitcher size="md" />
             </div>
             <div>
-                <ul className="grid grid-flow-col grid-cols-2 grid-rows-4 gap-x-6 gap-y-3">
-                    {footerNavItems.map((navItem) => (
+                <ul className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    {legalNavItems.map((navItem) => (
                         <li key={navItem.label}>
                             <Button color="link-gray" size="lg" href={navItem.href}>
                                 {navItem.label}
@@ -291,7 +281,7 @@ const authenticatedNavItems: HeaderNavItem[] = [
 const lightTextClass = "text-white";
 const darkTextClass = "text-secondary";
 
-export const Header = ({ items = headerNavItems, isFullWidth, isFloating, className }: HeaderProps) => {
+export const Header = ({ items = publicNavItems, isFullWidth, isFloating, className }: HeaderProps) => {
     const headerRef = useRef<HTMLElement>(null);
     const overDarkBackground = useHeaderContrast(isFloating, headerRef);
     const lightContent = overDarkBackground;

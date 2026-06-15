@@ -42,6 +42,14 @@ function qualityScore(w: GoTimeWindow): number {
     return w.averageScore / 100;
 }
 
+function displayStart(w: GoTimeWindow): string {
+    return w.displayStartTime ?? w.startTime;
+}
+
+function displayEnd(w: GoTimeWindow): string {
+    return w.displayEndTime ?? w.endTime;
+}
+
 function applyGoodOnly(windows: GoTimeWindow[], goodOnly: boolean): GoTimeWindow[] {
     if (!goodOnly) return windows;
     return windows.filter((w) => w.category === "GOOD");
@@ -55,23 +63,23 @@ function applyLocationFilter(windows: GoTimeWindow[], locationId: string): GoTim
 function isWindowInNextSevenDays(w: GoTimeWindow, now: Date): boolean {
     const start = startOfLocalDay(now);
     const end = addDaysLocal(start, 7);
-    const ws = new Date(w.startTime);
+    const ws = new Date(displayStart(w));
     return ws >= start && ws < end;
 }
 
 function compareByQualityThenTime(a: GoTimeWindow, b: GoTimeWindow): number {
     const q = qualityScore(b) - qualityScore(a);
     if (Math.abs(q) > 1e-9) return q;
-    return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    return new Date(displayStart(a)).getTime() - new Date(displayStart(b)).getTime();
 }
 
 /** Clock order for the same calendar day and location (not suitability). */
 function compareByStartTime(a: GoTimeWindow, b: GoTimeWindow): number {
-    const ta = new Date(a.startTime).getTime();
-    const tb = new Date(b.startTime).getTime();
+    const ta = new Date(displayStart(a)).getTime();
+    const tb = new Date(displayStart(b)).getTime();
     if (ta !== tb) return ta - tb;
-    const ea = new Date(a.endTime).getTime();
-    const eb = new Date(b.endTime).getTime();
+    const ea = new Date(displayEnd(a)).getTime();
+    const eb = new Date(displayEnd(b)).getTime();
     if (ea !== eb) return ea - eb;
     return a.id.localeCompare(b.id);
 }
@@ -115,7 +123,7 @@ function groupByDayThenLocation(
 }> {
     const byDate = new Map<string, Map<string, GoTimeWindow[]>>();
     for (const w of windows) {
-        const dateKey = toLocalDateKey(new Date(w.startTime));
+        const dateKey = toLocalDateKey(new Date(displayStart(w)));
         let byLoc = byDate.get(dateKey);
         if (!byLoc) {
             byLoc = new Map();
@@ -196,7 +204,7 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
 
     const { nextCandidates, nextWindowNote } = useMemo(() => {
         const future = [...filtered]
-            .filter((w) => new Date(w.startTime) >= now)
+            .filter((w) => new Date(displayStart(w)) >= now)
             .sort(compareByStartTime);
         const candidates = buildNextCandidates(future);
         if (candidates.length === 0) {

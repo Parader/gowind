@@ -612,6 +612,27 @@ function groupPointsByHour(points: ForecastPoint[]): Map<string, ForecastPoint[]
     return m;
 }
 
+function pickDisplayTimeIso(points: ForecastPoint[]): string {
+    return points.find((p) => p.source === "open-meteo")?.sliceTimeIso ?? points[0]!.sliceTimeIso;
+}
+
+function addHoursToDisplayIso(displayIso: string, hours: number): string {
+    const match = displayIso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})(?::(\d{2}))?(?::(\d{2}))?/);
+    if (!match) return new Date(new Date(displayIso).getTime() + hours * 3600e3).toISOString();
+
+    const [, year, month, day, hour, minute = "00", second = "00"] = match;
+    const ms = Date.UTC(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour) + hours,
+        Number(minute),
+        Number(second)
+    );
+
+    return new Date(ms).toISOString().slice(0, 19);
+}
+
 export function buildFusedHourlyTimeline(
     allPoints: ForecastPoint[],
     prefs: FusionPreferences,
@@ -622,7 +643,7 @@ export function buildFusedHourlyTimeline(
     const out: FusedHour[] = [];
     for (const [, pts] of buckets) {
         const locId = pts[0].locationId;
-        const display = pts[0].sliceTimeIso;
+        const display = pickDisplayTimeIso(pts);
         const fused = fuseHourBucket(locId, display, pts, prefs, totalProviderCount, nowMs);
         if (fused) out.push(fused);
     }
@@ -655,6 +676,9 @@ export interface RawFusionWindow {
     locationId: string;
     startTime: string;
     endTime: string;
+    /** Forecast-local display times; these preserve the user/location clock hours for UI labels. */
+    displayStartTime: string;
+    displayEndTime: string;
     hours: FusedHour[];
     /** Mean suitability (preference match) across hours in this window. */
     windowSuitability: number;
@@ -726,6 +750,8 @@ function toRawWindow(run: FusedHour[]): RawFusionWindow {
         locationId: run[0].locationId,
         startTime: run[0].timestampUtc,
         endTime: new Date(new Date(run[run.length - 1].timestampUtc).getTime() + 3600e3).toISOString(),
+        displayStartTime: run[0].displayTimeIso,
+        displayEndTime: addHoursToDisplayIso(run[run.length - 1].displayTimeIso, 1),
         hours: run,
         windowSuitability: suits.reduce((a, b) => a + b, 0) / suits.length,
         minSuitability: Math.min(...suits),

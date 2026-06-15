@@ -28,13 +28,43 @@ import posthog from "./posthog.js";
 
 const PORT = process.env.PORT || 3001;
 
+function normalizeOrigin(url: string): string | null {
+    try {
+        return new URL(url.trim()).origin;
+    } catch {
+        return null;
+    }
+}
+
+function getAllowedFrontendOrigins(): string[] {
+    const configured = [
+        process.env.FRONTEND_URL,
+        ...(process.env.FRONTEND_ORIGINS ?? "").split(","),
+    ];
+
+    return [
+        ...new Set(
+            configured
+                .map((url) => (url ? normalizeOrigin(url) : null))
+                .filter((url): url is string => Boolean(url))
+        ),
+    ];
+}
+
 async function main() {
     await connectDb();
 
     const app = express();
+    const allowedFrontendOrigins = getAllowedFrontendOrigins();
     app.use(
         cors({
-            origin: process.env.FRONTEND_URL || "http://localhost:5173",
+            origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+                if (!origin || allowedFrontendOrigins.includes(origin)) {
+                    callback(null, true);
+                    return;
+                }
+                callback(new Error(`CORS origin not allowed: ${origin}`));
+            },
             credentials: true,
         })
     );

@@ -10,7 +10,10 @@ const router = Router();
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 function getTokenCookieOptions() {
-    const isProduction = process.env.NODE_ENV === "production";
+    const isProduction =
+        process.env.NODE_ENV === "production" ||
+        process.env.RENDER === "true" ||
+        process.env.API_URL?.startsWith("https://");
     const sameSite: "lax" | "none" = isProduction ? "none" : "lax";
 
     return {

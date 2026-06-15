@@ -1,5 +1,5 @@
 import type { FC, ReactNode } from "react";
-import { Bell01, LifeBuoy01, SearchLg, Settings01 } from "@untitledui/icons";
+import { LifeBuoy01, SearchLg, Settings01 } from "@untitledui/icons";
 import { Button as AriaButton, DialogTrigger, Popover } from "react-aria-components";
 import { Link } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
@@ -74,12 +74,12 @@ export const HeaderNavigationBase = ({
 
                     <div className="mt-auto flex flex-col gap-4 px-2 py-4 lg:px-4 lg:py-6">
                         <div className="flex flex-col gap-1">
-                            <NavItemBase type="link" href="#" icon={LifeBuoy01}>
-                                Support
+                            <NavItemBase type="link" href="/about" icon={LifeBuoy01}>
+                                About
                             </NavItemBase>
                             <NavItemBase
                                 type="link"
-                                href="#"
+                                href="/account/settings"
                                 icon={Settings01}
                                 badge={
                                     <BadgeWithDot color="success" type="modern" size="sm">
@@ -87,10 +87,7 @@ export const HeaderNavigationBase = ({
                                     </BadgeWithDot>
                                 }
                             >
-                                Settings
-                            </NavItemBase>
-                            <NavItemBase type="link" href="https://www.untitledui.com/" icon={Settings01}>
-                                Open in browser
+                                Account settings
                             </NavItemBase>
                         </div>
 
@@ -134,19 +131,11 @@ export const HeaderNavigationBase = ({
 
                             <div className="flex gap-0.5">
                                 <NavItemButton
-                                    current={activeUrl === "/settings-01"}
+                                    current={activeUrl === "/account/settings"}
                                     size="md"
                                     icon={Settings01}
-                                    label="Settings"
-                                    href="/settings-01"
-                                    tooltipPlacement="bottom"
-                                />
-                                <NavItemButton
-                                    current={activeUrl === "/notifications-01"}
-                                    size="md"
-                                    icon={Bell01}
-                                    label="Notifications"
-                                    href="/notifications-01"
+                                    label="Account settings"
+                                    href="/account/settings"
                                     tooltipPlacement="bottom"
                                 />
                             </div>

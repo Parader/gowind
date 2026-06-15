@@ -205,11 +205,11 @@ export const SidebarNavigationSlim = ({ activeUrl, items, footerItems = [], hide
 
                     <div className="mt-auto flex flex-col gap-5 px-2 py-4">
                         <div className="flex flex-col gap-2">
-                            <NavItemBase current={activeUrl === "/support"} type="link" href="/support" icon={LifeBuoy01}>
-                                Support
+                            <NavItemBase current={activeUrl === "/about"} type="link" href="/about" icon={LifeBuoy01}>
+                                About
                             </NavItemBase>
-                            <NavItemBase current={activeUrl === "/settings"} type="link" href="/settings" icon={Settings01}>
-                                Settings
+                            <NavItemBase current={activeUrl === "/account/settings"} type="link" href="/account/settings" icon={Settings01}>
+                                Account settings
                             </NavItemBase>
                         </div>
 

@@ -1,4 +1,3 @@
-import { LayersThree01 } from "@untitledui/icons";
 import { cx } from "@/utils/cx";
 import type { WeatherHeightFt } from "@/types/setup";
 
@@ -53,14 +52,8 @@ export function AltitudeHeightSelector({ value, onChange, className }: AltitudeH
             role="group"
             aria-label="Select weather data altitudes (ground to sky)"
         >
-            {/* Header: icon + title */}
-            <div className="flex items-center gap-2 border-b border-secondary bg-secondary_alt/40 px-4 py-3">
-                <LayersThree01 className="size-5 text-secondary" strokeWidth={1.5} />
-                <h4 className="text-sm font-semibold text-secondary">Altitude & Height</h4>
-            </div>
-
             {/* Main visual: dark navy card (like Preferred Direction in mockup) */}
-            <div className="relative overflow-hidden rounded-b-xl bg-slate-800 p-4 dark:bg-slate-900">
+            <div className="relative overflow-hidden rounded-xl bg-slate-800 p-4 dark:bg-slate-900">
                 <div className="relative flex h-56 flex-col overflow-hidden rounded-lg ring-1 ring-white/10">
                     {/* Sky-to-ground gradient background */}
                     <div

@@ -22,6 +22,7 @@ import {
 
 const COMPUTED_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
 const HORIZON_DAYS = 7;
+const GO_TIMES_ALGORITHM_VERSION = 3;
 
 /** Drop cached go-times so the next GET recomputes with current setup (preferences/locations). */
 export async function invalidateGoTimesCache(userId: string): Promise<void> {
@@ -117,6 +118,9 @@ export interface GoTimeWindow {
     locationLng?: number;
     startTime: string;
     endTime: string;
+    /** Forecast-local display times for user-facing labels. */
+    displayStartTime?: string;
+    displayEndTime?: string;
     category: Category;
     /** 0–1 suitability: how well conditions match user limits (wind, gust, temp, precip, time). */
     suitabilityScore?: number;
@@ -599,6 +603,8 @@ function mapFusionWindowToGoTimeWindow(
         locationId: locId,
         startTime: w.startTime,
         endTime: w.endTime,
+        displayStartTime: w.displayStartTime,
+        displayEndTime: w.displayEndTime,
         category,
         suitabilityScore: suit,
         averageScore: suit * 100,
@@ -908,6 +914,7 @@ export async function computeAndStoreGoTimes(userId: string): Promise<GoTimesRes
                     providerStatuses,
                     heightsSubscribed,
                     minSessionLengthMinutes,
+                    algorithmVersion: GO_TIMES_ALGORITHM_VERSION,
                 },
             },
         },
@@ -936,6 +943,7 @@ export async function getGoTimes(userId: string): Promise<GoTimesResult> {
         providerStatuses?: ProviderFetchStatus[];
         heightsSubscribed?: WeatherHeightFtExport[];
         minSessionLengthMinutes?: number;
+        algorithmVersion?: number;
     }) ?? {};
     const computedAtMs = data.computedAt ? new Date(data.computedAt).getTime() : 0;
     const windows = (data.windows ?? []) as GoTimeWindow[];
@@ -943,9 +951,10 @@ export async function getGoTimes(userId: string): Promise<GoTimesResult> {
 
     const now = Date.now();
     const isStale = now - computedAtMs > COMPUTED_MAX_AGE_MS;
+    const isOldAlgorithm = data.algorithmVersion !== GO_TIMES_ALGORITHM_VERSION;
     const hasPassedWindows = windows.some((w) => new Date(w.startTime).getTime() < now - 60 * 60 * 1000);
 
-    if (isStale || hasPassedWindows || windows.length === 0) {
+    if (isStale || isOldAlgorithm || hasPassedWindows || windows.length === 0) {
         return computeAndStoreGoTimes(userId);
     }
 

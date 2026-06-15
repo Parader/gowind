@@ -2,11 +2,8 @@ import { useState, useEffect, useMemo, forwardRef, useImperativeHandle } from "r
 import { useSearchParams } from "react-router";
 import {
     ChevronDown,
-    Clock,
     Save01,
     Sun,
-    Thermometer02,
-    Wind03,
 } from "@untitledui/icons";
 import { AltitudeHeightSelector } from "@/components/preferences/altitude-height-selector";
 import {
@@ -378,13 +375,7 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
             case "wind":
                 return (
                     <div className={cx(cardCls)}>
-                        <div className="flex items-center justify-between border-b border-secondary bg-secondary_alt/40 px-4 py-3">
-                            <div className="flex items-center gap-2">
-                                <Wind03 className="size-5 text-secondary" strokeWidth={1.5} />
-                                <h4 className="text-sm font-semibold text-secondary">
-                                    Wind Dynamics
-                                </h4>
-                            </div>
+                        <div className="flex justify-end px-4 pt-4">
                             <div className="flex rounded-full border border-secondary bg-secondary_alt p-0.5">
                                 <button
                                     type="button"
@@ -412,7 +403,7 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
                                 </button>
                             </div>
                         </div>
-                        <div className="space-y-6 p-4">
+                        <div className="space-y-6 p-4 pt-6">
                             <div>
                                 <div className="mb-2 flex items-center justify-between">
                                     <span className="text-sm font-medium text-secondary">
@@ -506,12 +497,6 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
             case "comfort":
                 return (
                     <div className={cx(cardCls)}>
-                        <div className="flex items-center gap-2 border-b border-secondary bg-secondary_alt/40 px-4 py-3">
-                            <Thermometer02 className="size-5 text-secondary" strokeWidth={1.5} />
-                            <h4 className="text-sm font-semibold text-secondary">
-                                Comfort & Sky
-                            </h4>
-                        </div>
                         <div className="space-y-6 p-4">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -585,10 +570,6 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
             case "timing":
                 return (
                     <div className={cx(cardCls)}>
-                        <div className="flex items-center gap-2 border-b border-secondary bg-secondary_alt/40 px-4 py-3">
-                            <Clock className="size-5 text-secondary" strokeWidth={1.5} />
-                            <h4 className="text-sm font-semibold text-secondary">Timing</h4>
-                        </div>
                         <div className="grid grid-cols-1 gap-6 p-4 sm:grid-cols-2">
                             <div>
                                 <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-tertiary">

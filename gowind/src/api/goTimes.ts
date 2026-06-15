@@ -15,6 +15,9 @@ export interface GoTimeWindow {
     locationLng?: number;
     startTime: string;
     endTime: string;
+    /** Forecast-local display times for user-facing labels. */
+    displayStartTime?: string;
+    displayEndTime?: string;
     category: "GOOD" | "MARGINAL" | "NO_GO";
     /** 0–1 how well conditions match your limits (suitability). */
     suitabilityScore?: number;
