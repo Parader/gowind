@@ -2,13 +2,20 @@ import type { ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { ChevronDown } from "@untitledui/icons";
-import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
+import {
+    Button as AriaButton,
+    Dialog as AriaDialog,
+    DialogTrigger as AriaDialogTrigger,
+    Modal as AriaModal,
+    ModalOverlay as AriaModalOverlay,
+    Popover as AriaPopover,
+} from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { ThemeSwitcher } from "@/components/base/theme-switcher/theme-switcher";
 import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import { GoWindLogoMinimal } from "@/components/foundations/logo/gowind-logo-minimal";
 import { HeaderProfileMenu } from "@/components/marketing/header-navigation/header-profile-menu";
-import { useAuth } from "@/providers/auth-provider";
+import { getCachedAuthUser, useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
 import { useTheme } from "@/providers/theme-provider";
 import { cx } from "@/utils/cx";
@@ -29,7 +36,19 @@ const legalNavItems: HeaderNavItem[] = [
     { label: "Terms", href: "/terms" },
 ];
 
-const MobileNavItem = (props: { className?: string; label: string; href?: string; children?: ReactNode }) => {
+const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+    cx(
+        "flex items-center justify-between px-4 py-3 text-md font-semibold hover:bg-primary_hover",
+        isActive ? "text-brand-600 dark:text-brand-400 bg-primary_hover" : "text-primary",
+    );
+
+const MobileNavItem = (props: {
+    className?: string;
+    label: string;
+    href?: string;
+    children?: ReactNode;
+    onNavigate?: () => void;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
 
     if (props.href) {
@@ -37,12 +56,8 @@ const MobileNavItem = (props: { className?: string; label: string; href?: string
             <li>
                 <NavLink
                     to={props.href}
-                    className={({ isActive }) =>
-                        cx(
-                            "flex items-center justify-between px-4 py-3 text-md font-semibold hover:bg-primary_hover",
-                            isActive ? "text-brand-600 dark:text-brand-400 bg-primary_hover" : "text-primary"
-                        )
-                    }
+                    onClick={props.onNavigate}
+                    className={mobileNavLinkClass}
                 >
                     {props.label}
                 </NavLink>
@@ -67,9 +82,9 @@ const MobileNavItem = (props: { className?: string; label: string; href?: string
     );
 };
 
-const MobileFooter = () => {
-    const { user, isAdmin, isLoading, logout } = useAuth();
-    const { needsFullOnboarding } = useSetup();
+const MobileFooter = ({ onNavigate }: { onNavigate?: () => void }) => {
+    const { user, isLoading, logout } = useAuth();
+    const effectiveUser = user ?? (isLoading ? getCachedAuthUser() : null);
 
     return (
         <div className="flex flex-col gap-8 border-t border-secondary px-4 py-6">
@@ -88,92 +103,30 @@ const MobileFooter = () => {
                     ))}
                 </ul>
             </div>
-            {isLoading ? (
-                <div className="h-10" aria-hidden="true" />
-            ) : user ? (
+            {effectiveUser ? (
                 <div className="flex flex-col gap-3">
-                    <NavLink
-                        to="/go-time"
-                        className={({ isActive }) =>
-                            cx(
-                                "rounded-lg px-4 py-2.5 text-md font-semibold transition",
-                                isActive ? "bg-secondary text-brand-600 dark:text-brand-400" : "text-primary hover:bg-primary_hover"
-                            )
-                        }
-                    >
-                        Go Time
-                    </NavLink>
-                    {!needsFullOnboarding && (
-                        <>
-                            <NavLink
-                                to="/locations"
-                                className={({ isActive }) =>
-                                    cx(
-                                        "rounded-lg px-4 py-2.5 text-md font-semibold transition",
-                                        isActive ? "bg-secondary text-brand-600 dark:text-brand-400" : "text-primary hover:bg-primary_hover"
-                                    )
-                                }
-                            >
-                                Locations
-                            </NavLink>
-                            <NavLink
-                                to="/preferences"
-                                className={({ isActive }) =>
-                                    cx(
-                                        "rounded-lg px-4 py-2.5 text-md font-semibold transition",
-                                        isActive ? "bg-secondary text-brand-600 dark:text-brand-400" : "text-primary hover:bg-primary_hover"
-                                    )
-                                }
-                            >
-                                Preferences
-                            </NavLink>
-                        </>
-                    )}
-                    <NavLink
-                        to="/account/settings"
-                        className={({ isActive }) =>
-                            cx(
-                                "rounded-lg px-4 py-2.5 text-md font-semibold transition",
-                                isActive ? "bg-secondary text-brand-600 dark:text-brand-400" : "text-primary hover:bg-primary_hover"
-                            )
-                        }
-                    >
+                    <NavLink to="/account/settings" className={mobileNavLinkClass} onClick={onNavigate}>
                         Account settings
                     </NavLink>
-                    {isAdmin && (
-                        <>
-                            <NavLink
-                                to="/data"
-                                className={({ isActive }) =>
-                                    cx(
-                                        "rounded-lg px-4 py-2.5 text-md font-semibold transition",
-                                        isActive ? "bg-secondary text-brand-600 dark:text-brand-400" : "text-primary hover:bg-primary_hover"
-                                    )
-                                }
-                            >
-                                Data
-                            </NavLink>
-                            <NavLink
-                                to="/admin"
-                                className={({ isActive }) =>
-                                    cx(
-                                        "rounded-lg px-4 py-2.5 text-md font-semibold transition",
-                                        isActive ? "bg-secondary text-brand-600 dark:text-brand-400" : "text-primary hover:bg-primary_hover"
-                                    )
-                                }
-                            >
-                                Admin
-                            </NavLink>
-                        </>
-                    )}
-                    <Button color="secondary" size="lg" onClick={() => logout()}>Log out</Button>
-                </div>
-            ) : (
-                <div className="flex flex-col gap-3">
-                    <Button color="secondary" size="lg" href="/login">
-                        Log in
+                    <Button
+                        color="secondary"
+                        size="lg"
+                        onClick={() => {
+                            onNavigate?.();
+                            void logout();
+                        }}
+                    >
+                        Log out
                     </Button>
                 </div>
+            ) : (
+                !isLoading && (
+                    <div className="flex flex-col gap-3">
+                        <Button color="secondary" size="lg" href="/login">
+                            Log in
+                        </Button>
+                    </div>
+                )
             )}
         </div>
     );
@@ -292,11 +245,18 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
     const { needsFullOnboarding } = useSetup();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileHeaderHidden, setMobileHeaderHidden] = useState(false);
+    const effectiveUser = user ?? (isLoading ? getCachedAuthUser() : null);
     const setupNavItems = needsFullOnboarding
         ? authenticatedNavItems.filter((item) => item.href === "/go-time")
         : authenticatedNavItems;
-    const adminNavItems: HeaderNavItem[] = isAdmin ? [{ label: "Data", href: "/data" }] : [];
-    const navItems = user ? [...setupNavItems, ...adminNavItems, ...items] : items;
+    const adminNavItems: HeaderNavItem[] = isAdmin
+        ? [
+              { label: "Data", href: "/data" },
+              { label: "Admin", href: "/admin" },
+          ]
+        : [];
+    const navItems = effectiveUser ? [...setupNavItems, ...adminNavItems, ...items] : items;
+    const closeMobileMenu = () => setMobileMenuOpen(false);
 
     useEffect(() => {
         setMobileMenuOpen(false);
@@ -421,9 +381,9 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
 
                     <div className="hidden items-center gap-2 md:flex">
                         <ThemeSwitcher size={isFloating ? "sm" : "md"} />
-                        {isLoading ? (
+                        {isLoading && !effectiveUser ? (
                             <div className="size-10" aria-hidden="true" />
-                        ) : user ? (
+                        ) : effectiveUser ? (
                             <HeaderProfileMenu size={isFloating ? "sm" : "md"} />
                         ) : (
                             <Button color="secondary" size={isFloating ? "md" : "lg"} href="/login">
@@ -432,14 +392,7 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
                         )}
                     </div>
 
-                    {/* Mobile profile when logged in */}
-                    {!isLoading && user && (
-                        <div className="flex items-center gap-2 md:hidden">
-                            <HeaderProfileMenu size="sm" />
-                        </div>
-                    )}
-
-                    {/* Mobile menu and menu trigger */}
+                    {/* Mobile menu */}
                     <AriaDialogTrigger isOpen={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                         <AriaButton
                             aria-label="Toggle navigation menu"
@@ -470,32 +423,49 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
                                 />
                             </svg>
                         </AriaButton>
-                        <AriaPopover
-                            triggerRef={headerRef}
-                            className="h-calc(100%-72px) scrollbar-hide w-full overflow-y-auto shadow-lg md:hidden"
-                            offset={0}
-                            crossOffset={20}
-                            containerPadding={0}
-                            placement="bottom left"
+                        <AriaModalOverlay
+                            isDismissable
+                            className={({ isEntering, isExiting }) =>
+                                cx(
+                                    "fixed inset-0 z-50 bg-overlay/70 backdrop-blur-md md:hidden",
+                                    isEntering && "duration-300 ease-in-out animate-in fade-in",
+                                    isExiting && "duration-200 ease-in-out animate-out fade-out",
+                                )
+                            }
                         >
-                            <AriaDialog className="outline-hidden">
-                                <nav className="w-full bg-primary shadow-lg">
-                                    <ul className="flex flex-col gap-0.5 py-5">
-                                        {navItems.map((navItem) =>
-                                            navItem.menu ? (
-                                                <MobileNavItem key={navItem.label} label={navItem.label}>
-                                                    {navItem.menu}
-                                                </MobileNavItem>
-                                            ) : (
-                                                <MobileNavItem key={navItem.label} label={navItem.label} href={navItem.href} />
-                                            ),
-                                        )}
-                                    </ul>
+                            <AriaModal className="w-full max-w-none cursor-auto will-change-transform md:hidden">
+                                <AriaDialog className="flex h-dvh flex-col bg-primary outline-hidden focus:outline-hidden md:hidden">
+                                    {effectiveUser && (
+                                        <div className="border-b border-secondary px-4 py-4">
+                                            <p className="truncate text-sm font-semibold text-primary">{effectiveUser.email}</p>
+                                            {effectiveUser.name && (
+                                                <p className="truncate text-xs text-tertiary">{effectiveUser.name}</p>
+                                            )}
+                                        </div>
+                                    )}
+                                    <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                                        <ul className="flex flex-col gap-0.5 py-5">
+                                            {navItems.map((navItem) =>
+                                                navItem.menu ? (
+                                                    <MobileNavItem key={navItem.label} label={navItem.label}>
+                                                        {navItem.menu}
+                                                    </MobileNavItem>
+                                                ) : (
+                                                    <MobileNavItem
+                                                        key={navItem.label}
+                                                        label={navItem.label}
+                                                        href={navItem.href}
+                                                        onNavigate={closeMobileMenu}
+                                                    />
+                                                ),
+                                            )}
+                                        </ul>
 
-                                    <MobileFooter />
-                                </nav>
-                            </AriaDialog>
-                        </AriaPopover>
+                                        <MobileFooter onNavigate={closeMobileMenu} />
+                                    </nav>
+                                </AriaDialog>
+                            </AriaModal>
+                        </AriaModalOverlay>
                     </AriaDialogTrigger>
                 </div>
             </div>

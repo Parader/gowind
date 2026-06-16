@@ -6,6 +6,10 @@ import * as authApi from "@/api/auth";
 
 const AUTH_CACHE_KEY = "gowind_auth_user";
 
+export function getCachedAuthUser(): User | null {
+    return getCachedUser();
+}
+
 function getCachedUser(): User | null {
     try {
         const cached = sessionStorage.getItem(AUTH_CACHE_KEY);
