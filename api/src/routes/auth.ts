@@ -91,7 +91,7 @@ router.get(
         const user = req.user as { _id: unknown; email: string; name?: string; image?: string };
         const token = signToken({ userId: String(user._id), email: user.email });
         setTokenCookie(res, token);
-        res.redirect(`${FRONTEND_URL}/?logged_in=1`);
+        res.redirect(`${FRONTEND_URL}/go-time?logged_in=1`);
     }
 );
 

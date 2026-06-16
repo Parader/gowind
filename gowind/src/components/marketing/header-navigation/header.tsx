@@ -68,7 +68,7 @@ const MobileNavItem = (props: { className?: string; label: string; href?: string
 };
 
 const MobileFooter = () => {
-    const { user, isAdmin, logout } = useAuth();
+    const { user, isAdmin, isLoading, logout } = useAuth();
     const { needsFullOnboarding } = useSetup();
 
     return (
@@ -88,7 +88,9 @@ const MobileFooter = () => {
                     ))}
                 </ul>
             </div>
-            {user ? (
+            {isLoading ? (
+                <div className="h-10" aria-hidden="true" />
+            ) : user ? (
                 <div className="flex flex-col gap-3">
                     <NavLink
                         to="/go-time"
@@ -286,7 +288,7 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
     const overDarkBackground = useHeaderContrast(isFloating, headerRef);
     const lightContent = overDarkBackground;
     const { pathname } = useLocation();
-    const { user, isAdmin } = useAuth();
+    const { user, isAdmin, isLoading } = useAuth();
     const { needsFullOnboarding } = useSetup();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileHeaderHidden, setMobileHeaderHidden] = useState(false);
@@ -419,7 +421,9 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
 
                     <div className="hidden items-center gap-2 md:flex">
                         <ThemeSwitcher size={isFloating ? "sm" : "md"} />
-                        {user ? (
+                        {isLoading ? (
+                            <div className="size-10" aria-hidden="true" />
+                        ) : user ? (
                             <HeaderProfileMenu size={isFloating ? "sm" : "md"} />
                         ) : (
                             <Button color="secondary" size={isFloating ? "md" : "lg"} href="/login">
@@ -429,7 +433,7 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
                     </div>
 
                     {/* Mobile profile when logged in */}
-                    {user && (
+                    {!isLoading && user && (
                         <div className="flex items-center gap-2 md:hidden">
                             <HeaderProfileMenu size="sm" />
                         </div>

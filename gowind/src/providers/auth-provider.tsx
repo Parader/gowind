@@ -41,51 +41,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    const loadUser = useCallback(async () => {
-        try {
-            const { user, isAdmin: admin } = await authApi.getMe();
-            setUser(user);
-            setIsAdmin(admin ?? false);
-            setCachedUser(user);
-        } catch {
-            setUser(null);
-            setIsAdmin(false);
-            setCachedUser(null);
-        } finally {
-            setIsLoading(false);
-        }
+    const applyUser = useCallback((nextUser: User | null, admin = false) => {
+        setUser(nextUser);
+        setIsAdmin(admin);
+        setCachedUser(nextUser);
     }, []);
 
+    const loadUser = useCallback(
+        async (options?: { retries?: number }) => {
+            const retries = options?.retries ?? 1;
+            setIsLoading(true);
+
+            for (let attempt = 0; attempt < retries; attempt++) {
+                try {
+                    const { user: nextUser, isAdmin: admin } = await authApi.getMe();
+                    applyUser(nextUser, admin ?? false);
+                    setIsLoading(false);
+                    return nextUser;
+                } catch {
+                    if (attempt < retries - 1) {
+                        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+                    }
+                }
+            }
+
+            applyUser(null);
+            setIsLoading(false);
+            return null;
+        },
+        [applyUser]
+    );
+
     useEffect(() => {
-        loadUser();
-    }, [loadUser]);
+        const params = new URLSearchParams(window.location.search);
+        const isOAuthReturn = params.get("logged_in") === "1";
+
+        void (async () => {
+            const authenticatedUser = await loadUser({ retries: isOAuthReturn ? 3 : 1 });
+            if (!isOAuthReturn) return;
+
+            params.delete("logged_in");
+            const remainingSearch = params.toString();
+            navigate(
+                {
+                    pathname: authenticatedUser ? "/go-time" : "/login",
+                    search: remainingSearch ? `?${remainingSearch}` : "",
+                },
+                { replace: true }
+            );
+        })();
+    }, [loadUser, navigate]);
 
     const login = useCallback(
         async (email: string, password: string) => {
-            const { user } = await authApi.login(email, password);
-            setUser(user);
-            setCachedUser(user);
-            navigate("/");
+            const { user: nextUser } = await authApi.login(email, password);
+            applyUser(nextUser);
+            navigate("/go-time");
         },
-        [navigate]
+        [navigate, applyUser]
     );
 
     const signup = useCallback(
         async (email: string, password: string, name?: string) => {
-            const { user } = await authApi.signup(email, password, name);
-            setUser(user);
-            setCachedUser(user);
-            navigate("/");
+            const { user: nextUser } = await authApi.signup(email, password, name);
+            applyUser(nextUser);
+            navigate("/go-time");
         },
-        [navigate]
+        [navigate, applyUser]
     );
 
     const logout = useCallback(async () => {
         await authApi.logout();
-        setUser(null);
-        setCachedUser(null);
+        applyUser(null);
         navigate("/");
-    }, [navigate]);
+    }, [navigate, applyUser]);
 
     const value: AuthContextValue = {
         user,
