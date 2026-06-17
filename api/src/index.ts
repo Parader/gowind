@@ -66,6 +66,7 @@ async function main() {
                 callback(new Error(`CORS origin not allowed: ${origin}`));
             },
             credentials: true,
+            allowedHeaders: ["Content-Type", "Authorization"],
         })
     );
     app.use(cookieParser());

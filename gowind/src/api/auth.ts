@@ -7,14 +7,14 @@ export interface User {
     image?: string;
 }
 
-export async function signup(email: string, password: string, name?: string): Promise<{ user: User }> {
+export async function signup(email: string, password: string, name?: string): Promise<{ user: User; token: string }> {
     return apiFetch("/auth/signup", {
         method: "POST",
         body: JSON.stringify({ email, password, name }),
     });
 }
 
-export async function login(email: string, password: string): Promise<{ user: User }> {
+export async function login(email: string, password: string): Promise<{ user: User; token: string }> {
     return apiFetch("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),

@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useNavigate } from "react-router";
 import type { User } from "@/api/auth";
 import * as authApi from "@/api/auth";
+import { consumeOAuthTokenFromHash, setAuthToken } from "@/api/auth-token";
 
 const AUTH_CACHE_KEY = "gowind_auth_user";
 
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
         setIsAdmin(admin);
         setCachedUser(nextUser);
+        if (!nextUser) setAuthToken(null);
     }, []);
 
     const loadUser = useCallback(
@@ -77,6 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     useEffect(() => {
+        const oauthToken = consumeOAuthTokenFromHash();
+        if (oauthToken) setAuthToken(oauthToken);
+
         const params = new URLSearchParams(window.location.search);
         const isOAuthReturn = params.get("logged_in") === "1";
 
@@ -98,7 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = useCallback(
         async (email: string, password: string) => {
-            const { user: nextUser } = await authApi.login(email, password);
+            const { user: nextUser, token } = await authApi.login(email, password);
+            setAuthToken(token);
             applyUser(nextUser);
             navigate("/go-time");
         },
@@ -107,7 +113,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signup = useCallback(
         async (email: string, password: string, name?: string) => {
-            const { user: nextUser } = await authApi.signup(email, password, name);
+            const { user: nextUser, token } = await authApi.signup(email, password, name);
+            setAuthToken(token);
             applyUser(nextUser);
             navigate("/go-time");
         },

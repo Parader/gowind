@@ -20,6 +20,8 @@ function getTokenCookieOptions() {
         httpOnly: true,
         secure: isProduction,
         sameSite,
+        // Helps some browsers retain cross-site cookies; Bearer token is the primary prod auth path.
+        ...(isProduction ? { partitioned: true as const } : {}),
     };
 }
 
@@ -55,7 +57,7 @@ router.post("/signup", async (req: Request, res: Response) => {
         const user = await User.create({ email, password, name: name || undefined });
         const token = signToken({ userId: String(user._id), email: user.email });
         setTokenCookie(res, token);
-        res.status(201).json({ user: toSafeUser(user) });
+        res.status(201).json({ user: toSafeUser(user), token });
     } catch (err) {
         console.error("Signup error:", err);
         res.status(500).json({ error: "Sign up failed" });
@@ -76,7 +78,7 @@ router.post("/login", (req: Request, res: Response, next) => {
         const u = user as { _id: unknown; email: string; name?: string; image?: string };
         const token = signToken({ userId: String(u._id), email: u.email });
         setTokenCookie(res, token);
-        res.json({ user: toSafeUser(u) });
+        res.json({ user: toSafeUser(u), token });
     })(req, res, next);
 });
 
@@ -91,7 +93,7 @@ router.get(
         const user = req.user as { _id: unknown; email: string; name?: string; image?: string };
         const token = signToken({ userId: String(user._id), email: user.email });
         setTokenCookie(res, token);
-        res.redirect(`${FRONTEND_URL}/go-time?logged_in=1`);
+        res.redirect(`${FRONTEND_URL}/go-time?logged_in=1#token=${encodeURIComponent(token)}`);
     }
 );
 
