@@ -4,6 +4,7 @@ import L from "leaflet";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { cx } from "@/utils/cx";
+import { useT } from "@/providers/locale-provider";
 
 const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
 
@@ -69,6 +70,7 @@ export function LocationMapPicker({
     className,
     height = "320px",
 }: LocationMapPickerProps) {
+    const t = useT();
     const searchId = useId();
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<GeocodeResult[]>([]);
@@ -141,7 +143,7 @@ export function LocationMapPicker({
         <div className={cx("overflow-hidden rounded-xl border border-secondary", className)}>
             <div ref={wrapRef} className="relative border-b border-secondary bg-secondary_alt/20 px-3 py-2">
                 <label htmlFor={searchId} className="sr-only">
-                    Search map
+                    {t("locationPicker.mapPicker.searchAria")}
                 </label>
                 <div className="relative">
                     <SearchLg
@@ -153,7 +155,7 @@ export function LocationMapPicker({
                         id={searchId}
                         type="search"
                         autoComplete="off"
-                        placeholder="Search city, municipality, address…"
+                        placeholder={t("locationPicker.mapPicker.searchPlaceholder")}
                         value={query}
                         onChange={(e) => {
                             setQuery(e.target.value);
@@ -197,7 +199,7 @@ export function LocationMapPicker({
                 )}
                 {open && !loading && query.trim().length >= 2 && results.length === 0 && (
                     <p className="absolute left-3 right-3 top-full z-[1000] mt-1 rounded-lg border border-secondary bg-white px-3 py-2 text-sm text-tertiary shadow-lg dark:bg-primary">
-                        No places found. Try another spelling or click the map.
+                        {t("locationPicker.mapPicker.noResults")}
                     </p>
                 )}
             </div>
@@ -222,7 +224,7 @@ export function LocationMapPicker({
                 </MapContainer>
             </div>
             <p className="border-t border-secondary bg-secondary_alt/30 px-4 py-2 text-sm text-tertiary">
-                Search above or click the map to select a location
+                {t("locationPicker.mapPicker.hint")}
             </p>
         </div>
     );

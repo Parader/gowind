@@ -3,6 +3,7 @@ import { Navigate } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
+import { useLocale } from "@/providers/locale-provider";
 import { getMetar, getTaf } from "@/api/aviation";
 import { getWeather } from "@/api/weather";
 import { formatTimeAgo } from "@/utils/format";
@@ -11,19 +12,28 @@ import type { WeatherHeightFt } from "@/types/setup";
 
 const PROVIDERS = ["open-meteo", "openweather", "meteosource", "visualcrossing", "met-norway"] as const;
 
-function providerLabel(id: string, withHint = false): string {
-    const labels: Record<string, string> = {
-        "openweather": "OpenWeather",
-        meteosource: "Meteosource",
-        visualcrossing: "Visual Crossing",
-        "open-meteo": "Open-Meteo",
-        "met-norway": "MET Norway",
-    };
-    const name = labels[id] ?? id;
-    if (withHint && id === "meteosource") return `${name} (7d hourly+daily)`;
-    if (withHint && id === "met-norway") return `${name} (Nordic/global, free)`;
-    if (withHint && id === "openweather") return `${name} (5d max, 3h)`;
+const PROVIDER_I18N: Record<string, { name: string; hint?: string; tooltip?: string }> = {
+    openweather: { name: "openWeather", hint: "openWeatherHint", tooltip: "openWeatherTooltip" },
+    meteosource: { name: "meteosource", hint: "meteosourceHint", tooltip: "meteosourceTooltip" },
+    visualcrossing: { name: "visualCrossing" },
+    "open-meteo": { name: "openMeteo" },
+    "met-norway": { name: "metNorway", hint: "metNorwayHint", tooltip: "metNorwayTooltip" },
+};
+
+function providerLabel(
+    id: string,
+    t: (key: string) => string,
+    withHint = false,
+): string {
+    const meta = PROVIDER_I18N[id];
+    const name = meta ? t(`data.providers.${meta.name}`) : id;
+    if (withHint && meta?.hint) return `${name}${t(`data.providers.${meta.hint}`)}`;
     return name;
+}
+
+function providerTooltip(id: string, t: (key: string) => string): string | undefined {
+    const meta = PROVIDER_I18N[id];
+    return meta?.tooltip ? t(`data.providers.${meta.tooltip}`) : undefined;
 }
 
 interface HourlySlice {
@@ -85,17 +95,17 @@ function toLocalDateKey(d: Date): string {
     return `${y}-${m}-${day}`;
 }
 
-function getTimeFrameLabel(dateKey: string): string {
+function getTimeFrameLabel(dateKey: string, t: (key: string) => string, dateLocale: string): string {
     const today = new Date();
     const todayKey = toLocalDateKey(today);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowKey = toLocalDateKey(tomorrow);
 
-    if (dateKey === todayKey) return "Today";
-    if (dateKey === tomorrowKey) return "Tomorrow";
+    if (dateKey === todayKey) return t("common.dates.today");
+    if (dateKey === tomorrowKey) return t("common.dates.tomorrow");
     const dayStart = new Date(dateKey + "T12:00:00");
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(dateLocale, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -163,7 +173,9 @@ function buildHourlyGrid(
 }
 
 function groupGridByDate(
-    grid: Array<{ time: string; dateKey: string; byProvider: Map<string, HourlySlice> }>
+    grid: Array<{ time: string; dateKey: string; byProvider: Map<string, HourlySlice> }>,
+    t: (key: string) => string,
+    dateLocale: string,
 ): Array<{ dateKey: string; label: string; rows: typeof grid }> {
     const byDate = new Map<string, typeof grid>();
     for (const row of grid) {
@@ -176,7 +188,7 @@ function groupGridByDate(
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([dateKey, rows]) => ({
             dateKey,
-            label: getTimeFrameLabel(dateKey),
+            label: getTimeFrameLabel(dateKey, t, dateLocale),
             rows,
         }));
 }
@@ -198,6 +210,7 @@ function JsonBlock({ data, label }: { data: unknown; label?: string }) {
 }
 
 export const Data = () => {
+    const { t, dateLocale } = useLocale();
     const { user, isAdmin, isLoading } = useAuth();
     const { locations, preferences } = useSetup();
     const [multiSource, setMultiSource] = useState<
@@ -250,7 +263,7 @@ export const Data = () => {
                         fetchedAt: new Date().toISOString(),
                         cached: false,
                         slices: [],
-                        error: e instanceof Error ? e.message : "Request failed",
+                        error: e instanceof Error ? e.message : t("data.requestFailed"),
                     };
                 }
             });
@@ -263,13 +276,13 @@ export const Data = () => {
             }
             return results;
         },
-        [days, heights]
+        [days, heights, t]
     );
 
     const fetchAllSources = useCallback(
         async (forceRefresh = false) => {
             if (displayLocations.length === 0) {
-                setError("Add locations in Locations first");
+                setError(t("data.addLocationsFirst"));
                 return;
             }
             setLoading("all-sources");
@@ -285,12 +298,12 @@ export const Data = () => {
                 }
                 setMultiSource(next);
             } catch (e) {
-                setError(e instanceof Error ? e.message : "Request failed");
+                setError(e instanceof Error ? e.message : t("data.requestFailed"));
             } finally {
                 setLoading(null);
             }
         },
-        [displayLocations, fetchAllProvidersForLocation]
+        [displayLocations, fetchAllProvidersForLocation, t]
     );
 
     const fetchSingleProvider = useCallback(
@@ -315,18 +328,18 @@ export const Data = () => {
                     },
                 }));
             } catch (e) {
-                setError(e instanceof Error ? e.message : "Request failed");
+                setError(e instanceof Error ? e.message : t("data.requestFailed"));
             } finally {
                 setLoading(null);
             }
         },
-        [heights, provider, days]
+        [heights, provider, days, t]
     );
 
     const fetchAllWeather = useCallback(
         async (forceRefresh = false) => {
             if (locations.length === 0) {
-                setError("Add locations in Locations first");
+                setError(t("data.addLocationsFirst"));
                 return;
             }
             setLoading("weather-all");
@@ -350,18 +363,18 @@ export const Data = () => {
                 }
                 setWeatherByLocation(merged);
             } catch (e) {
-                setError(e instanceof Error ? e.message : "Request failed");
+                setError(e instanceof Error ? e.message : t("data.requestFailed"));
             } finally {
                 setLoading(null);
             }
         },
-        [locations, heights, provider, days]
+        [locations, heights, provider, days, t]
     );
 
     const fetchAviation = useCallback(async () => {
         const ids = aviationIds.split(/[\s,]+/).filter(Boolean);
         if (ids.length === 0) {
-            setError("Enter at least one station ID (e.g. CYQB, KJFK)");
+            setError(t("data.aviation.enterStation"));
             return;
         }
         setLoading("aviation");
@@ -370,11 +383,11 @@ export const Data = () => {
             const [metar, taf] = await Promise.all([getMetar(ids), getTaf(ids)]);
             setAviationData({ metar: metar as Record<string, unknown>[], taf: taf as Record<string, unknown>[] });
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Aviation fetch failed");
+            setError(e instanceof Error ? e.message : t("data.aviation.fetchFailed"));
         } finally {
             setLoading(null);
         }
-    }, [aviationIds]);
+    }, [aviationIds, t]);
 
     const hasLoadedCachedData = useRef(false);
     useEffect(() => {
@@ -392,7 +405,7 @@ export const Data = () => {
         for (const [locId, forecasts] of Object.entries(multiSource)) {
             if (forecasts.length === 0) continue;
             const grid = buildHourlyGrid(forecasts, days);
-            const grouped = groupGridByDate(grid);
+            const grouped = groupGridByDate(grid, t, dateLocale);
             out[locId] = grouped.map((g) => ({
                 dateKey: g.dateKey,
                 label: g.label,
@@ -400,7 +413,7 @@ export const Data = () => {
             }));
         }
         return out;
-    }, [multiSource, days]);
+    }, [multiSource, days, t, dateLocale]);
 
     if (!isLoading && !user) {
         return <Navigate to="/login" replace />;
@@ -417,24 +430,22 @@ export const Data = () => {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                            Data & API
+                            {t("data.title")}
                         </h1>
-                        <p className="mt-2 text-md text-tertiary">
-                            Compare weather from all sources for your locations and periods.
-                        </p>
+                        <p className="mt-2 text-md text-tertiary">{t("data.subtitle")}</p>
                     </div>
                 </div>
 
                 {/* Controls */}
                 <div className="mt-6 flex flex-wrap items-center gap-4">
                     <label className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-secondary">Location</span>
+                        <span className="text-sm font-medium text-secondary">{t("data.location")}</span>
                         <select
                             value={locationFilter}
                             onChange={(e) => setLocationFilter(e.target.value)}
                             className="rounded-lg border border-secondary bg-white px-3 py-2 text-sm text-primary ring-1 ring-secondary ring-inset outline-none focus:ring-2 focus:ring-brand dark:bg-primary dark:ring-primary"
                         >
-                            <option value="all">All locations</option>
+                            <option value="all">{t("data.allLocations")}</option>
                             {locations.map((loc) => (
                                 <option key={loc.id} value={loc.id}>
                                     {loc.name}
@@ -443,15 +454,15 @@ export const Data = () => {
                         </select>
                     </label>
                     <label className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-secondary">Days</span>
+                        <span className="text-sm font-medium text-secondary">{t("data.days")}</span>
                         <select
                             value={days}
                             onChange={(e) => setDays(parseInt(e.target.value, 10))}
                             className="rounded-lg border border-secondary bg-white px-3 py-2 text-sm text-primary ring-1 ring-secondary ring-inset outline-none focus:ring-2 focus:ring-brand dark:bg-primary dark:ring-primary"
                         >
-                            <option value={1}>1 day</option>
-                            <option value={3}>3 days</option>
-                            <option value={7}>7 days</option>
+                            <option value={1}>{t("data.day1")}</option>
+                            <option value={3}>{t("data.day3")}</option>
+                            <option value={7}>{t("data.day7")}</option>
                         </select>
                     </label>
                     <div className="flex items-center gap-2">
@@ -464,7 +475,7 @@ export const Data = () => {
                                     : "bg-secondary_alt/50 text-secondary hover:bg-secondary_alt"
                             }`}
                         >
-                            Compare all sources
+                            {t("data.viewComparison")}
                         </button>
                         <button
                             type="button"
@@ -475,7 +486,7 @@ export const Data = () => {
                                     : "bg-secondary_alt/50 text-secondary hover:bg-secondary_alt"
                             }`}
                         >
-                            Raw JSON
+                            {t("data.viewRaw")}
                         </button>
                         <button
                             type="button"
@@ -486,7 +497,7 @@ export const Data = () => {
                                     : "bg-secondary_alt/50 text-secondary hover:bg-secondary_alt"
                             }`}
                         >
-                            Aviation
+                            {t("data.viewAviation")}
                         </button>
                     </div>
                     <Button
@@ -497,9 +508,7 @@ export const Data = () => {
                             loading !== null || displayLocations.length === 0
                         }
                     >
-                        {loading === "all-sources"
-                            ? "Loading…"
-                            : "Fetch all sources"}
+                        {loading === "all-sources" ? t("data.loading") : t("data.fetchAllSources")}
                     </Button>
                 </div>
 
@@ -511,18 +520,11 @@ export const Data = () => {
                 <div className="mt-10 grid gap-8">
                     {viewMode === "comparison" ? (
                         <section className="flex flex-col gap-6 rounded-xl border border-secondary bg-white p-6 dark:bg-primary">
-                            <h2 className="text-lg font-semibold text-primary">
-                                Weather comparison (all sources)
-                            </h2>
+                            <h2 className="text-lg font-semibold text-primary">{t("data.comparison.title")}</h2>
                             {displayLocations.length === 0 ? (
-                                <p className="text-sm text-quaternary">
-                                    Add locations in the Locations page, then fetch weather.
-                                </p>
+                                <p className="text-sm text-quaternary">{t("data.comparison.emptyLocations")}</p>
                             ) : Object.keys(multiSource).length === 0 ? (
-                                <p className="text-sm text-quaternary">
-                                    Click &quot;Fetch all sources&quot; to load data from all
-                                    providers.
-                                </p>
+                                <p className="text-sm text-quaternary">{t("data.comparison.emptyData")}</p>
                             ) : (
                                 <div className="space-y-8">
                                     {displayLocations.map((loc) => {
@@ -555,12 +557,9 @@ export const Data = () => {
                                                                         : ""
                                                                 }
                                                             >
-                                                                {providerLabel(
-                                                                    fc.provider,
-                                                                    true
-                                                                )}
-                                                                {fc.cached && " (cached)"}
-                                                                {fc.error && " — failed"}
+                                                                {providerLabel(fc.provider, t, true)}
+                                                                {fc.cached && t("data.comparison.cached")}
+                                                                {fc.error && t("data.comparison.failed")}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -579,30 +578,17 @@ export const Data = () => {
                                                                 <thead>
                                                                     <tr className="border-b border-secondary">
                                                                         <th className="px-2 py-1.5 text-left font-medium text-tertiary">
-                                                                            Time
+                                                                            {t("data.comparison.time")}
                                                                         </th>
-                                                                        {PROVIDERS.map(
-                                                                            (p) => (
-                                                                                <th
-                                                                                    key={p}
-                                                                                    className="px-2 py-1.5 text-center font-medium text-tertiary"
-                                                                                    title={
-                                                p === "meteosource"
-                                                    ? "7 days: hourly where available, daily fallback"
-                                                    : p === "met-norway"
-                                                        ? "Locationforecast 2.0; set MET_NORWAY_USER_AGENT (email/URL)"
-                                                        : p === "openweather"
-                                                            ? "Forecast5 API: 5 days max, 3-hour intervals"
-                                                            : undefined
-                                            }
-                                                                                >
-                                                                                    {providerLabel(
-                                                                                        p,
-                                                                                        true
-                                                                                    )}
-                                                                                </th>
-                                                                            )
-                                                                        )}
+                                                                        {PROVIDERS.map((p) => (
+                                                                            <th
+                                                                                key={p}
+                                                                                className="px-2 py-1.5 text-center font-medium text-tertiary"
+                                                                                title={providerTooltip(p, t)}
+                                                                            >
+                                                                                {providerLabel(p, t, true)}
+                                                                            </th>
+                                                                        ))}
                                                                     </tr>
                                                                     <tr className="border-b border-secondary/50 text-xs text-quaternary">
                                                                         <th className="px-2 py-1" />
@@ -612,7 +598,7 @@ export const Data = () => {
                                                                                     key={p}
                                                                                     className="px-2 py-1"
                                                                                 >
-                                                                                    Wind · Gust · T · P%
+                                                                                    {t("data.comparison.metricsHeader")}
                                                                                 </th>
                                                                             )
                                                                         )}
@@ -661,7 +647,7 @@ export const Data = () => {
                                                                                                         }
                                                                                                         className="px-2 py-1.5 text-center text-quaternary"
                                                                                                     >
-                                                                                                        —
+                                                                                                        {t("data.comparison.noData")}
                                                                                                     </td>
                                                                                                 );
                                                                                             return (
@@ -670,7 +656,12 @@ export const Data = () => {
                                                                                                         p
                                                                                                     }
                                                                                                     className="px-2 py-1.5 text-center text-secondary"
-                                                                                                    title={`Wind ${s.wind} km/h, Gust ${s.gust ?? "—"}, Temp ${s.temp}°C, Precip ${s.precip ?? "—"}%`}
+                                                                                                    title={t("data.comparison.tooltipWind", {
+                                                                                                        wind: s.wind,
+                                                                                                        gust: s.gust ?? t("data.comparison.noData"),
+                                                                                                        temp: s.temp,
+                                                                                                        precip: s.precip ?? t("data.comparison.noData"),
+                                                                                                    })}
                                                                                                 >
                                                                                                     <span className="font-mono text-xs">
                                                                                                         {Math.round(
@@ -716,21 +707,17 @@ export const Data = () => {
                         <section className="flex flex-col gap-6 rounded-xl border border-secondary bg-white p-6 dark:bg-primary">
                             <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div>
-                                    <h2 className="text-lg font-semibold text-primary">
-                                        Aviation (METAR / TAF)
-                                    </h2>
-                                    <p className="mt-1 text-xs text-tertiary">
-                                        Station-based obs and forecasts. No API key. Use for bias correction and sanity checks.
-                                    </p>
+                                    <h2 className="text-lg font-semibold text-primary">{t("data.aviation.title")}</h2>
+                                    <p className="mt-1 text-xs text-tertiary">{t("data.aviation.subtitle")}</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3">
                                     <label className="flex items-center gap-2">
-                                        <span className="text-sm font-medium text-secondary">Station IDs</span>
+                                        <span className="text-sm font-medium text-secondary">{t("data.aviation.stationIds")}</span>
                                         <input
                                             type="text"
                                             value={aviationIds}
                                             onChange={(e) => setAviationIds(e.target.value)}
-                                            placeholder="CYQB,CYUL,KJFK"
+                                            placeholder={t("data.aviation.placeholder")}
                                             className="w-48 rounded-lg border border-secondary bg-white px-3 py-2 text-sm text-primary ring-1 ring-secondary ring-inset outline-none focus:ring-2 focus:ring-brand dark:bg-primary dark:ring-primary"
                                         />
                                     </label>
@@ -740,13 +727,13 @@ export const Data = () => {
                                         onClick={() => fetchAviation()}
                                         isDisabled={loading !== null}
                                     >
-                                        {loading === "aviation" ? "Loading…" : "Fetch METAR & TAF"}
+                                        {loading === "aviation" ? t("data.loading") : t("data.aviation.fetch")}
                                     </Button>
                                 </div>
                             </div>
                             {(aviationData.metar?.length ?? 0) > 0 && (
                                 <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold text-secondary">METAR (current obs)</h3>
+                                    <h3 className="text-sm font-semibold text-secondary">{t("data.aviation.metarTitle")}</h3>
                                     <div className="space-y-3">
                                         {(aviationData.metar ?? []).map((m) => (
                                             <div key={String(m.icaoId)} className="rounded-lg border border-secondary bg-secondary_alt/30 p-4">
@@ -755,8 +742,11 @@ export const Data = () => {
                                                         {String(m.name ?? "")} ({String(m.icaoId ?? "")})
                                                     </span>
                                                     <span className="text-xs text-tertiary">
-                                                        Wind {String(m.wdir ?? "—")}° {String(m.wspd ?? "—")} kt · Temp{" "}
-                                                        {String(m.temp ?? "—")}°C
+                                                        {t("data.aviation.windSummary", {
+                                                            dir: String(m.wdir ?? t("data.comparison.noData")),
+                                                            speed: String(m.wspd ?? t("data.comparison.noData")),
+                                                            temp: String(m.temp ?? t("data.comparison.noData")),
+                                                        })}
                                                     </span>
                                                 </div>
                                                 <pre className="mt-2 overflow-x-auto font-mono text-xs text-secondary">
@@ -769,19 +759,19 @@ export const Data = () => {
                             )}
                             {(aviationData.taf?.length ?? 0) > 0 && (
                                 <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold text-secondary">TAF (forecast)</h3>
+                                    <h3 className="text-sm font-semibold text-secondary">{t("data.aviation.tafTitle")}</h3>
                                     <div className="space-y-3">
-                                        {(aviationData.taf ?? []).map((t) => (
-                                            <div key={String(t.icaoId)} className="rounded-lg border border-secondary bg-secondary_alt/30 p-4">
+                                        {(aviationData.taf ?? []).map((tafRow) => (
+                                            <div key={String(tafRow.icaoId)} className="rounded-lg border border-secondary bg-secondary_alt/30 p-4">
                                                 <div className="font-medium text-primary">
-                                                    {String(t.name ?? "")} ({String(t.icaoId ?? "")})
+                                                    {String(tafRow.name ?? "")} ({String(tafRow.icaoId ?? "")})
                                                 </div>
                                                 <pre className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-xs text-secondary">
-                                                    {String(t.rawTAF ?? "")}
+                                                    {String(tafRow.rawTAF ?? "")}
                                                 </pre>
-                                                {(t.fcsts as Array<{ timeFrom: number; timeTo: number; wdir?: number; wspd?: number; wgst?: number; visib?: string }>)?.length > 0 && (
+                                                {(tafRow.fcsts as Array<{ timeFrom: number; timeTo: number; wdir?: number; wspd?: number; wgst?: number; visib?: string }>)?.length > 0 && (
                                                     <div className="mt-3 flex flex-wrap gap-2">
-                                                        {(t.fcsts as Array<{ timeFrom: number; timeTo: number; wdir?: number; wspd?: number; wgst?: number }>)
+                                                        {(tafRow.fcsts as Array<{ timeFrom: number; timeTo: number; wdir?: number; wspd?: number; wgst?: number }>)
                                                             .filter((f) => f.wdir != null || f.wspd != null)
                                                             .slice(0, 8)
                                                             .map((f, i) => (
@@ -799,27 +789,26 @@ export const Data = () => {
                                 </div>
                             )}
                             {!aviationData.metar?.length && !aviationData.taf?.length && (
-                                <p className="text-sm text-quaternary">
-                                    Enter station IDs (e.g. CYQB, CYUL, KJFK) and click Fetch. ICAO codes for airports.
-                                </p>
+                                <p className="text-sm text-quaternary">{t("data.aviation.emptyHint")}</p>
                             )}
                         </section>
                     ) : (
                         <section className="flex flex-col gap-4 rounded-xl border border-secondary bg-white p-6 dark:bg-primary">
                             <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div>
-                                    <h2 className="text-lg font-semibold text-primary">
-                                        Raw API (single provider)
-                                    </h2>
+                                    <h2 className="text-lg font-semibold text-primary">{t("data.raw.title")}</h2>
                                     <p className="mt-1 text-xs text-tertiary">
-                                        {provider}, {days} days. Heights:{" "}
-                                        {heights.join(", ")} ft
+                                        {t("data.raw.subtitle", {
+                                            provider,
+                                            days,
+                                            heights: heights.join(", "),
+                                        })}
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <label className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-secondary">
-                                            Provider
+                                            {t("data.raw.provider")}
                                         </span>
                                         <select
                                             value={provider}
@@ -828,21 +817,11 @@ export const Data = () => {
                                             }
                                             className="rounded-lg border border-secondary bg-white px-3 py-2 text-sm text-primary ring-1 ring-secondary ring-inset outline-none focus:ring-2 focus:ring-brand dark:bg-primary dark:ring-primary"
                                         >
-                                            <option value="open-meteo">
-                                                Open-Meteo
-                                            </option>
-                                            <option value="openweather">
-                                                OpenWeather
-                                            </option>
-                                            <option value="visualcrossing">
-                                                Visual Crossing
-                                            </option>
-                                            <option value="meteosource">
-                                                Meteosource
-                                            </option>
-                                            <option value="met-norway">
-                                                MET Norway
-                                            </option>
+                                            <option value="open-meteo">{t("data.providers.openMeteo")}</option>
+                                            <option value="openweather">{t("data.providers.openWeather")}</option>
+                                            <option value="visualcrossing">{t("data.providers.visualCrossing")}</option>
+                                            <option value="meteosource">{t("data.providers.meteosource")}</option>
+                                            <option value="met-norway">{t("data.providers.metNorway")}</option>
                                         </select>
                                     </label>
                                     <Button
@@ -854,16 +833,12 @@ export const Data = () => {
                                             locations.length === 0
                                         }
                                     >
-                                        {loading === "weather-all"
-                                            ? "Fetching…"
-                                            : "Fetch all"}
+                                        {loading === "weather-all" ? t("data.fetching") : t("data.raw.fetchAll")}
                                     </Button>
                                 </div>
                             </div>
                             {locations.length === 0 ? (
-                                <p className="text-sm text-quaternary">
-                                    Add locations in the Locations page.
-                                </p>
+                                <p className="text-sm text-quaternary">{t("data.raw.emptyLocations")}</p>
                             ) : (
                                 <div className="space-y-6">
                                     {locations.map((loc) => {
@@ -900,8 +875,8 @@ export const Data = () => {
                                                         {locLoading
                                                             ? "…"
                                                             : saved
-                                                              ? "Refresh"
-                                                              : "Fetch"}
+                                                              ? t("common.actions.refresh")
+                                                              : t("data.raw.fetch")}
                                                     </Button>
                                                 </div>
                                                 {saved ? (
@@ -909,7 +884,7 @@ export const Data = () => {
                                                         <div className="flex flex-wrap gap-4 text-sm">
                                                             <span>
                                                                 <span className="font-medium text-tertiary">
-                                                                    Provider:
+                                                                    {t("data.raw.providerLabel")}
                                                                 </span>{" "}
                                                                 {saved.provider}
                                                             </span>
@@ -919,7 +894,7 @@ export const Data = () => {
                                                                 }
                                                             >
                                                                 <span className="font-medium text-tertiary">
-                                                                    Fetched:
+                                                                    {t("data.raw.fetchedLabel")}
                                                                 </span>{" "}
                                                                 {formatTimeAgo(
                                                                     saved.fetchedAt
@@ -928,13 +903,11 @@ export const Data = () => {
                                                         </div>
                                                         <JsonBlock
                                                             data={saved.data}
-                                                            label="Data"
+                                                            label={t("data.raw.dataLabel")}
                                                         />
                                                     </div>
                                                 ) : (
-                                                    <p className="mt-2 text-sm text-quaternary">
-                                                        No data. Click Fetch.
-                                                    </p>
+                                                    <p className="mt-2 text-sm text-quaternary">{t("data.raw.noData")}</p>
                                                 )}
                                             </div>
                                         );

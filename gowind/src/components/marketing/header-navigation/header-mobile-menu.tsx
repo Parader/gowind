@@ -22,9 +22,11 @@ import {
 import { AvatarLabelGroup } from "@/components/base/avatar/avatar-label-group";
 import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
+import { LanguageSwitcher } from "@/components/base/language-switcher/language-switcher";
 import { ThemeSwitcher } from "@/components/base/theme-switcher/theme-switcher";
 import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import type { User } from "@/api/auth";
+import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 
 type MobileNavLink = {
@@ -33,22 +35,29 @@ type MobileNavLink = {
     icon?: FC<{ className?: string }>;
 };
 
-const legalNavItems: MobileNavLink[] = [
-    { label: "Privacy", href: "/privacy" },
-    { label: "Terms", href: "/terms" },
+const legalNavHrefs = ["/privacy", "/terms"] as const;
+
+const publicNavItems: { href: string; icon: FC<{ className?: string }> }[] = [
+    { href: "/", icon: Home02 },
+    { href: "/about", icon: InfoCircle },
 ];
 
-const publicNavItems: MobileNavLink[] = [
-    { label: "Home", href: "/", icon: Home02 },
-    { label: "About", href: "/about", icon: InfoCircle },
-];
+const legalLabelKey: Record<string, string> = {
+    "/privacy": "common.legal.privacy",
+    "/terms": "common.legal.terms",
+};
+
+const publicLabelKey: Record<string, string> = {
+    "/": "common.nav.home",
+    "/about": "common.nav.about",
+};
 
 const appNavIcons: Record<string, FC<{ className?: string }>> = {
-    "Go Time": Stars01,
-    Locations: Map01,
-    Preferences: Sliders01,
-    Data: BarChartSquare02,
-    Admin: Shield01,
+    "/go-time": Stars01,
+    "/locations": Map01,
+    "/preferences": Sliders01,
+    "/data": BarChartSquare02,
+    "/admin": Shield01,
 };
 
 interface HeaderMobileMenuProps {
@@ -72,17 +81,18 @@ export const HeaderMobileMenu = ({
     triggerClassName,
     lightTrigger,
 }: HeaderMobileMenuProps) => {
+    const t = useT();
     const close = () => onOpenChange(false);
 
     const appItems = appNavItems.map((item) => ({
         ...item,
-        icon: item.icon ?? appNavIcons[item.label],
+        icon: item.icon ?? appNavIcons[item.href],
     }));
 
     return (
         <AriaDialogTrigger isOpen={isOpen} onOpenChange={onOpenChange}>
             <AriaButton
-                aria-label="Open navigation menu"
+                aria-label={t("common.mobileMenu.open")}
                 className={({ isFocusVisible, isHovered }) =>
                     cx(
                         "group relative ml-auto cursor-pointer rounded-lg p-2 md:hidden",
@@ -119,7 +129,7 @@ export const HeaderMobileMenu = ({
                 {({ state }) => (
                     <>
                         <AriaButton
-                            aria-label="Close navigation menu"
+                            aria-label={t("common.mobileMenu.close")}
                             onPress={() => state.close()}
                             className="fixed top-3 right-2 z-[60] flex cursor-pointer items-center justify-center rounded-lg p-2 text-fg-white/80 outline-focus-ring hover:bg-white/10 hover:text-fg-white focus-visible:outline-2 focus-visible:outline-offset-2"
                         >
@@ -158,7 +168,7 @@ export const HeaderMobileMenu = ({
                                         {appItems.length > 0 ? (
                                             <Dropdown.Section>
                                                 <Dropdown.SectionHeader className="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-tertiary uppercase">
-                                                    App
+                                                    {t("common.mobileMenu.sections.app")}
                                                 </Dropdown.SectionHeader>
                                                 {appItems.map((item) => (
                                                     <Dropdown.Item
@@ -176,7 +186,7 @@ export const HeaderMobileMenu = ({
                                         <Dropdown.Section>
                                             {appItems.length > 0 ? <Dropdown.Separator /> : null}
                                             <Dropdown.SectionHeader className="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-tertiary uppercase">
-                                                Site
+                                                {t("common.mobileMenu.sections.site")}
                                             </Dropdown.SectionHeader>
                                             {publicNavItems.map((item) => (
                                                 <Dropdown.Item
@@ -185,7 +195,7 @@ export const HeaderMobileMenu = ({
                                                     icon={item.icon}
                                                     onAction={close}
                                                 >
-                                                    {item.label}
+                                                    {t(publicLabelKey[item.href] ?? item.href)}
                                                 </Dropdown.Item>
                                             ))}
                                         </Dropdown.Section>
@@ -194,17 +204,17 @@ export const HeaderMobileMenu = ({
                                             <Dropdown.Section>
                                                 <Dropdown.Separator />
                                                 <Dropdown.SectionHeader className="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-tertiary uppercase">
-                                                    Account
+                                                    {t("common.mobileMenu.sections.account")}
                                                 </Dropdown.SectionHeader>
                                                 <Dropdown.Item
                                                     href="/account/settings"
                                                     icon={Settings01}
                                                     onAction={close}
                                                 >
-                                                    Account settings
+                                                    {t("common.nav.accountSettings")}
                                                 </Dropdown.Item>
                                                 <Dropdown.Item icon={LogOut01} onAction={() => { close(); onLogout(); }}>
-                                                    Log out
+                                                    {t("common.nav.logOut")}
                                                 </Dropdown.Item>
                                             </Dropdown.Section>
                                         ) : null}
@@ -212,11 +222,11 @@ export const HeaderMobileMenu = ({
                                         <Dropdown.Section>
                                             <Dropdown.Separator />
                                             <Dropdown.SectionHeader className="px-4 pt-2 pb-1 text-xs font-semibold tracking-wide text-tertiary uppercase">
-                                                Legal
+                                                {t("common.mobileMenu.sections.legal")}
                                             </Dropdown.SectionHeader>
-                                            {legalNavItems.map((item) => (
-                                                <Dropdown.Item key={item.href} href={item.href} onAction={close}>
-                                                    {item.label}
+                                            {legalNavHrefs.map((href) => (
+                                                <Dropdown.Item key={href} href={href} onAction={close}>
+                                                    {t(legalLabelKey[href] ?? href)}
                                                 </Dropdown.Item>
                                             ))}
                                         </Dropdown.Section>
@@ -224,14 +234,20 @@ export const HeaderMobileMenu = ({
                                 </div>
 
                                 <div className="shrink-0 border-t border-secondary px-4 py-4">
-                                    <div className="flex items-center justify-between rounded-lg bg-secondary_alt px-3 py-2.5">
-                                        <span className="text-sm font-medium text-secondary">Theme</span>
-                                        <ThemeSwitcher size="md" />
+                                    <div className="flex items-center justify-between gap-4 rounded-lg bg-secondary_alt px-3 py-2.5">
+                                        <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                                            <span className="text-sm font-medium text-secondary">{t("common.theme.label")}</span>
+                                            <ThemeSwitcher size="md" />
+                                        </div>
+                                        <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                                            <span className="text-sm font-medium text-secondary">{t("common.language.label")}</span>
+                                            <LanguageSwitcher size="md" />
+                                        </div>
                                     </div>
 
                                     {!effectiveUser && !isLoading ? (
                                         <Button color="primary" size="lg" className="mt-3 w-full" href="/login" onClick={close}>
-                                            Log in
+                                            {t("common.nav.logIn")}
                                         </Button>
                                     ) : null}
                                 </div>

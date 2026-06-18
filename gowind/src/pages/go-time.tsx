@@ -5,11 +5,27 @@ import { Button } from "@/components/base/buttons/button";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import { OnboardingQuestionnaire } from "@/components/onboarding/onboarding-questionnaire";
 import { GoTimeFocusViews, type GoTimeFocusView } from "@/components/go-time/go-time-focus-views";
-import { getGoTimes, PROVIDER_DISPLAY_NAMES } from "@/api/goTimes";
+import { getGoTimes } from "@/api/goTimes";
 import type { GoTimeWindow, GoTimesMeta, ProviderFetchStatus } from "@/api/goTimes";
 import { useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
+import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
+
+type TFn = (key: string, params?: TranslateParams) => string;
+
+const PROVIDER_I18N_KEYS: Record<string, string> = {
+    "open-meteo": "goTime.providers.openMeteo",
+    "met-norway": "goTime.providers.metNorway",
+    meteosource: "goTime.providers.meteosource",
+    openweather: "goTime.providers.openWeather",
+    visualcrossing: "goTime.providers.visualCrossing",
+};
+
+function providerDisplayName(pid: string, t: TFn): string {
+    const key = PROVIDER_I18N_KEYS[pid];
+    return key ? t(key) : pid;
+}
 
 function toLocalDateKey(d: Date): string {
     const y = d.getFullYear();
@@ -18,17 +34,17 @@ function toLocalDateKey(d: Date): string {
     return `${y}-${m}-${day}`;
 }
 
-function getTimeFrameLabel(dateKey: string): string {
+function getTimeFrameLabel(dateKey: string, t: TFn, dateLocale: string): string {
     const today = new Date();
     const todayKey = toLocalDateKey(today);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowKey = toLocalDateKey(tomorrow);
 
-    if (dateKey === todayKey) return "Today";
-    if (dateKey === tomorrowKey) return "Tomorrow";
+    if (dateKey === todayKey) return t("common.dates.today");
+    if (dateKey === tomorrowKey) return t("common.dates.tomorrow");
     const dayStart = new Date(dateKey + "T12:00:00");
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(dateLocale, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -53,7 +69,10 @@ type NearMiss = {
 
 /** Day → Location → Slots. For near-misses. */
 function groupNearMissesByDayThenLocation(
-    nearMisses: NearMiss[]
+    nearMisses: NearMiss[],
+    t: TFn,
+    dateLocale: string,
+    defaultLocation: string,
 ): Array<{
     dateKey: string;
     label: string;
@@ -76,39 +95,47 @@ function groupNearMissesByDayThenLocation(
         const byLoc = byDate.get(dateKey)!;
         const locations = [...byLoc.entries()].map(([locationId, slots]) => ({
             locationId,
-            locationName: slots[0]?.locationName ?? "Location",
+            locationName: slots[0]?.locationName ?? defaultLocation,
             slots: slots.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()),
         }));
         return {
             dateKey,
-            label: getTimeFrameLabel(dateKey),
+            label: getTimeFrameLabel(dateKey, t, dateLocale),
             locations,
         };
     });
 }
 
-function formatLastUpdated(computedAt: string): string {
+function formatLastUpdated(computedAt: string, t: TFn, dateLocale: string): string {
     const d = new Date(computedAt);
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
     const diffHr = Math.floor(diffMin / 60);
-    if (diffMin < 1) return "Just now";
-    if (diffMin < 60) return `${diffMin} min ago`;
-    if (diffHr < 24) return `${diffHr} hr ago`;
-    return d.toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
+    if (diffMin < 1) return t("common.dates.justNow");
+    if (diffMin < 60) return t("common.dates.minutesAgo", { count: diffMin });
+    if (diffHr < 24) return t("common.dates.hoursAgo", { count: diffHr });
+    return d.toLocaleString(dateLocale, { dateStyle: "short", timeStyle: "short" });
 }
 
-function formatTimeRange(startIso: string, endIso: string): string {
+function formatTimeRange(startIso: string, endIso: string, dateLocale: string): string {
     const start = new Date(startIso);
     const end = new Date(endIso);
-    const fmt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+    const fmt = new Intl.DateTimeFormat(dateLocale, { hour: "numeric", minute: "2-digit" });
     return `${fmt.format(start)} – ${fmt.format(end)}`;
+}
+
+function nearMissCategoryLabel(cat: NearMiss["category"], t: TFn): string {
+    if (cat === "GOOD") return t("goTime.windowCard.categories.good");
+    if (cat === "MARGINAL") return t("goTime.windowCard.categories.marginal");
+    return t("goTime.windowCard.categories.notIdeal");
 }
 
 export const GoTime = () => {
     const { user, isAdmin, isLoading } = useAuth();
     const { needsFullOnboarding } = useSetup();
+    const t = useT();
+    const { dateLocale } = useLocale();
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [windows, setWindows] = useState<GoTimeWindow[]>([]);
     const [meta, setMeta] = useState<GoTimesMeta | null>(null);
@@ -148,13 +175,13 @@ export const GoTime = () => {
                 }
             })
             .catch((err) => {
-                if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load");
+                if (!cancelled) setError(err instanceof Error ? err.message : t("goTime.page.failedLoad"));
             })
             .finally(() => {
                 if (!cancelled) setLoading(false);
             });
         return () => { cancelled = true; };
-    }, [user, needsFullOnboarding]);
+    }, [user, needsFullOnboarding, t]);
 
     useEffect(() => {
         if (!forecastSettingsOpen) return;
@@ -196,6 +223,9 @@ export const GoTime = () => {
         !loading &&
         Boolean(providersUsed.length > 0 || computedAt || heightsSubscribed.length > 0 || minSessionLengthMinutes);
 
+    const formatHeight = (h: string) =>
+        h === "ground" ? t("goTime.page.groundHeight") : t("goTime.page.heightFt", { height: h });
+
     return (
         <main className="flex-1">
             <div className="mx-auto max-w-container px-4 py-12 md:px-8 md:py-16">
@@ -204,7 +234,7 @@ export const GoTime = () => {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                                Go Time
+                                {t("goTime.page.title")}
                             </h1>
                             {showForecastSettings && (
                                 <details
@@ -220,20 +250,20 @@ export const GoTime = () => {
                                 >
                                     <summary
                                         className="flex size-8 cursor-pointer list-none items-center justify-center rounded-full text-fg-quaternary transition hover:bg-primary_hover hover:text-fg-secondary marker:hidden [&::-webkit-details-marker]:hidden"
-                                        aria-label="Forecast sources and data settings"
+                                        aria-label={t("goTime.page.forecastSettingsAria")}
                                     >
                                         <HelpCircle className="size-4" />
                                     </summary>
                                     <div className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-secondary bg-primary p-4 shadow-lg">
                                         <p className="text-xs font-semibold text-secondary">
-                                            Forecast sources &amp; data settings
+                                            {t("goTime.page.forecastSettingsTitle")}
                                         </p>
                                         <div className="mt-3 space-y-3 border-t border-secondary/50 pt-3">
                                             {providersUsed.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {providersUsed.map((pid) => {
                                                         const st = providerStatusById.get(pid);
-                                                        const name = PROVIDER_DISPLAY_NAMES[pid] ?? pid;
+                                                        const name = providerDisplayName(pid, t);
                                                         const partial = st ? st.successCount > 0 && st.failCount > 0 : false;
                                                         const ok = st ? st.ok : false;
                                                         const dotClass = partial
@@ -245,13 +275,16 @@ export const GoTime = () => {
                                                                 : "bg-slate-400";
                                                         const subtitle = st
                                                             ? partial
-                                                                ? `${st.successCount} ok · ${st.failCount} failed`
+                                                                ? t("goTime.page.providerStatus.partial", {
+                                                                      successCount: st.successCount,
+                                                                      failCount: st.failCount,
+                                                                  })
                                                                 : ok
                                                                   ? st.lastSuccessWasCache
-                                                                      ? "From cache"
-                                                                      : "Fetched"
-                                                                  : "Fetch failed"
-                                                            : "Status unavailable";
+                                                                      ? t("goTime.page.providerStatus.fromCache")
+                                                                      : t("goTime.page.providerStatus.fetched")
+                                                                  : t("goTime.page.providerStatus.fetchFailed")
+                                                            : t("goTime.page.providerStatus.unavailable");
                                                         const title = st?.lastError ? `${name}: ${st.lastError}` : name;
                                                         return (
                                                             <div
@@ -277,22 +310,27 @@ export const GoTime = () => {
                                             <p className="text-xs leading-relaxed text-tertiary">
                                                 {providersUsed.length > 0 ? (
                                                     <>
-                                                        Data from {providersUsed.map((p) => PROVIDER_DISPLAY_NAMES[p] ?? p).join(", ")}.{" "}
+                                                        {t("goTime.page.dataFrom", {
+                                                            providers: providersUsed
+                                                                .map((p) => providerDisplayName(p, t))
+                                                                .join(", "),
+                                                        })}{" "}
                                                     </>
                                                 ) : null}
-                                                Minimum window: {minSessionLengthMinutes} min.
+                                                {t("goTime.page.minimumWindow", { minutes: minSessionLengthMinutes })}{" "}
                                                 {heightsSubscribed.length > 0 && (
                                                     <>
-                                                        {" "}
-                                                        Heights:{" "}
-                                                        {heightsSubscribed
-                                                            .map((h) => (h === "ground" ? "Ground (10m)" : `${h} ft`))
-                                                            .join(", ")}
-                                                        .
+                                                        {t("goTime.page.heights", {
+                                                            heights: heightsSubscribed.map(formatHeight).join(", "),
+                                                        })}{" "}
                                                     </>
                                                 )}
                                                 {weatherDataFetchedAt && (
-                                                    <> Weather from APIs: {formatLastUpdated(weatherDataFetchedAt)}.</>
+                                                    <>
+                                                        {t("goTime.page.weatherFromApis", {
+                                                            timeAgo: formatLastUpdated(weatherDataFetchedAt, t, dateLocale),
+                                                        })}
+                                                    </>
                                                 )}
                                             </p>
                                         </div>
@@ -300,13 +338,11 @@ export const GoTime = () => {
                                 </details>
                             )}
                         </div>
-                        <p className="mt-2 text-md text-tertiary">
-                            Decide when and where to fly — pick a view that matches what you need right now.
-                        </p>
+                        <p className="mt-2 text-md text-tertiary">{t("goTime.page.subtitle")}</p>
                     </div>
                     {isAdmin && (
                         <Button size="md" color="secondary" onClick={() => setShowOnboarding(true)}>
-                            Run setup again
+                            {t("goTime.page.runSetupAgain")}
                         </Button>
                     )}
                 </div>
@@ -320,44 +356,48 @@ export const GoTime = () => {
                     )}
                     {!error && loading && (
                         <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-secondary bg-white px-6 py-10 dark:bg-primary">
-                            <LoadingIndicator type="dot-circle" size="lg" label="Fetching the latest wind windows…" />
-                            <p className="max-w-lg text-center text-sm text-tertiary">
-                                We’re combining multiple forecast sources and checking them against your preferences.
-                            </p>
+                            <LoadingIndicator type="dot-circle" size="lg" label={t("goTime.page.loadingLabel")} />
+                            <p className="max-w-lg text-center text-sm text-tertiary">{t("goTime.page.loadingHint")}</p>
                         </div>
                     )}
                     {!error && !loading && windows.length === 0 && (
                         <div className="space-y-8">
-                            <p className="text-md text-tertiary">
-                                No wind windows found for your locations and preferences. Try widening your limits or adding more locations.
-                            </p>
+                            <p className="text-md text-tertiary">{t("goTime.page.noWindows")}</p>
                             {meta && (
                                 <>
                                     <section className="rounded-xl border border-secondary bg-white p-6 dark:bg-primary">
-                                        <h3 className="text-lg font-semibold text-secondary">What we verified</h3>
+                                        <h3 className="text-lg font-semibold text-secondary">
+                                            {t("goTime.page.verified.title")}
+                                        </h3>
                                         <p className="mt-2 text-sm text-tertiary">
-                                            Checked {meta.locationsChecked.map((l) => l.name).join(", ")} from{" "}
-                                            {meta.dateRange.from} to {meta.dateRange.to} using{" "}
-                                            {meta.providersUsed.map((p) => PROVIDER_DISPLAY_NAMES[p] ?? p).join(", ")}.
+                                            {t("goTime.page.verified.checked", {
+                                                locations: meta.locationsChecked.map((l) => l.name).join(", "),
+                                                from: meta.dateRange.from,
+                                                to: meta.dateRange.to,
+                                                providers: meta.providersUsed
+                                                    .map((p) => providerDisplayName(p, t))
+                                                    .join(", "),
+                                            })}
                                         </p>
                                         <div className="mt-3 flex flex-wrap gap-2">
                                             <span className="rounded-md bg-secondary_alt px-2.5 py-1 text-xs font-medium text-secondary">
-                                                {meta.slicesEvaluated} hourly slots checked
+                                                {t("goTime.page.verified.slicesChecked", {
+                                                    count: meta.slicesEvaluated,
+                                                })}
                                             </span>
                                             <span className="rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-                                                {meta.goodCount} good hours
+                                                {t("goTime.page.verified.goodHours", { count: meta.goodCount })}
                                             </span>
                                             <span className="rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                                                {meta.marginalCount} marginal hours
+                                                {t("goTime.page.verified.marginalHours", {
+                                                    count: meta.marginalCount,
+                                                })}
                                             </span>
                                             <span className="rounded-md bg-secondary_alt px-2.5 py-1 text-xs font-medium text-secondary">
-                                                {meta.noGoCount} no-go hours
+                                                {t("goTime.page.verified.noGoHours", { count: meta.noGoCount })}
                                             </span>
                                         </div>
-                                        <p className="mt-3 text-sm text-tertiary">
-                                            Good hours are single-hour scores from each weather source. Listed windows apply
-                                            extra rules on top of those scores.
-                                        </p>
+                                        <p className="mt-3 text-sm text-tertiary">{t("goTime.page.verified.note")}</p>
                                         {meta.whyNoListedWindows && meta.whyNoListedWindows.length > 0 && (
                                             <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-tertiary">
                                                 {meta.whyNoListedWindows.map((line) => (
@@ -368,21 +408,35 @@ export const GoTime = () => {
                                     </section>
                                     {meta.nearMisses.length > 0 && (
                                         <section className="rounded-xl border border-secondary bg-white p-6 dark:bg-primary">
-                                            <h3 className="mb-5 text-lg font-semibold text-secondary">How close</h3>
+                                            <h3 className="mb-5 text-lg font-semibold text-secondary">
+                                                {t("goTime.page.nearMisses.title")}
+                                            </h3>
                                             <p className="mb-5 text-sm text-tertiary">
-                                                Near-misses that almost met your preferences. Time ranges use your minimum session
-                                                length ({minSessionLengthMinutes} min); score and conditions are from the start
-                                                of that window.
+                                                {t("goTime.page.nearMisses.description", {
+                                                    minutes: minSessionLengthMinutes,
+                                                })}
                                             </p>
                                             <div className="space-y-10">
-                                                {groupNearMissesByDayThenLocation(meta.nearMisses as NearMiss[]).map((group) => (
+                                                {groupNearMissesByDayThenLocation(
+                                                    meta.nearMisses as NearMiss[],
+                                                    t,
+                                                    dateLocale,
+                                                    t("goTime.page.defaultLocation"),
+                                                ).map((group) => (
                                                     <div key={group.dateKey}>
-                                                        <h4 className="mb-4 text-base font-semibold text-primary">{group.label}</h4>
+                                                        <h4 className="mb-4 text-base font-semibold text-primary">
+                                                            {group.label}
+                                                        </h4>
                                                         <div className="space-y-5">
                                                             {group.locations.map((loc) => (
-                                                                <div key={loc.locationId} className="rounded-lg border border-secondary/60 bg-secondary_alt/20 p-4">
+                                                                <div
+                                                                    key={loc.locationId}
+                                                                    className="rounded-lg border border-secondary/60 bg-secondary_alt/20 p-4"
+                                                                >
                                                                     <h5 className="mb-3 text-sm font-semibold text-secondary">
-                                                                        Where you can fly: {loc.locationName}
+                                                                        {t("goTime.page.nearMisses.whereYouCanFly", {
+                                                                            locationName: loc.locationName,
+                                                                        })}
                                                                     </h5>
                                                                     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                                                                         {loc.slots.map((nm) => (
@@ -391,37 +445,52 @@ export const GoTime = () => {
                                                                                 className="flex flex-col gap-2 rounded-lg border border-secondary bg-white px-4 py-3 shadow-sm dark:bg-primary sm:min-w-[200px]"
                                                                             >
                                                                                 <div className="font-medium text-secondary">
-                                                                                    {formatTimeRange(nm.startTime, nm.endTime)}
+                                                                                    {formatTimeRange(
+                                                                                        nm.startTime,
+                                                                                        nm.endTime,
+                                                                                        dateLocale,
+                                                                                    )}
                                                                                 </div>
                                                                                 <div className="flex flex-wrap items-center gap-2 text-sm text-tertiary">
                                                                                     <span
                                                                                         className={cx(
                                                                                             "font-medium",
-                                                                                            nm.category === "GOOD" && "text-emerald-600 dark:text-emerald-400",
-                                                                                            nm.category === "MARGINAL" && "text-amber-600 dark:text-amber-400",
-                                                                                            nm.category === "NO_GO" && "text-red-600 dark:text-red-400"
+                                                                                            nm.category === "GOOD" &&
+                                                                                                "text-emerald-600 dark:text-emerald-400",
+                                                                                            nm.category === "MARGINAL" &&
+                                                                                                "text-amber-600 dark:text-amber-400",
+                                                                                            nm.category === "NO_GO" &&
+                                                                                                "text-red-600 dark:text-red-400",
                                                                                         )}
                                                                                     >
-                                                                                        {nm.category === "GOOD"
-                                                                                            ? "Good"
-                                                                                            : nm.category === "MARGINAL"
-                                                                                              ? "Marginal"
-                                                                                              : "Not ideal"}
+                                                                                        {nearMissCategoryLabel(nm.category, t)}
                                                                                     </span>
-                                                                                    <span>· Score {nm.score}</span>
+                                                                                    <span>
+                                                                                        ·{" "}
+                                                                                        {t("goTime.page.nearMisses.score", {
+                                                                                            score: nm.score,
+                                                                                        })}
+                                                                                    </span>
                                                                                 </div>
-                                                                                {(nm.allReasons && nm.allReasons.length > 0 ? nm.allReasons : [nm.reason]).map((line, ri) => (
+                                                                                {(nm.allReasons && nm.allReasons.length > 0
+                                                                                    ? nm.allReasons
+                                                                                    : [nm.reason]
+                                                                                ).map((line, ri) => (
                                                                                     <p key={ri} className="text-xs text-tertiary">
                                                                                         {line}
                                                                                     </p>
                                                                                 ))}
                                                                                 <div className="mt-1 flex flex-wrap gap-1.5">
                                                                                     <span className="rounded bg-secondary_alt px-2 py-0.5 text-xs font-medium text-secondary">
-                                                                                        Wind {Math.round(nm.windKmh)} km/h
+                                                                                        {t("goTime.page.nearMisses.wind", {
+                                                                                            speed: Math.round(nm.windKmh),
+                                                                                        })}
                                                                                     </span>
                                                                                     {nm.gustKmh != null && (
                                                                                         <span className="rounded bg-secondary_alt px-2 py-0.5 text-xs font-medium text-secondary">
-                                                                                            Gusts {Math.round(nm.gustKmh)} km/h
+                                                                                            {t("goTime.page.nearMisses.gusts", {
+                                                                                                speed: Math.round(nm.gustKmh),
+                                                                                            })}
                                                                                         </span>
                                                                                     )}
                                                                                     <span className="rounded bg-secondary_alt px-2 py-0.5 text-xs font-medium text-secondary">
@@ -429,7 +498,9 @@ export const GoTime = () => {
                                                                                     </span>
                                                                                     {nm.precipPct != null && (
                                                                                         <span className="rounded bg-secondary_alt px-2 py-0.5 text-xs font-medium text-secondary">
-                                                                                            Precip {Math.round(nm.precipPct)}%
+                                                                                            {t("goTime.page.nearMisses.precip", {
+                                                                                                percent: Math.round(nm.precipPct),
+                                                                                            })}
                                                                                         </span>
                                                                                     )}
                                                                                 </div>

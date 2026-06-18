@@ -3,9 +3,11 @@ import { Link, Navigate } from "react-router";
 import { ArrowLeft, RefreshCw01, Trash01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { useAuth } from "@/providers/auth-provider";
+import { useT } from "@/providers/locale-provider";
 import * as adminApi from "@/api/admin";
 
 export const Admin = () => {
+    const t = useT();
     const { user, isAdmin, isLoading } = useAuth();
     const [counts, setCounts] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
@@ -17,26 +19,26 @@ export const Admin = () => {
             const data = await adminApi.getApiStats();
             setCounts(data.counts);
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to load stats");
+            setError(e instanceof Error ? e.message : t("admin.failedLoad"));
             setCounts({});
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         if (isAdmin) fetchStats();
     }, [isAdmin, fetchStats]);
 
     const handleReset = useCallback(async () => {
-        if (!confirm("Reset all API call counts?")) return;
+        if (!confirm(t("admin.resetConfirm"))) return;
         try {
             await adminApi.resetApiStats();
             setCounts({});
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to reset");
+            setError(e instanceof Error ? e.message : t("admin.failedReset"));
         }
-    }, []);
+    }, [t]);
 
     if (!isLoading && !user) {
         return <Navigate to="/login" replace />;
@@ -57,16 +59,14 @@ export const Admin = () => {
                     className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-secondary_hover"
                 >
                     <ArrowLeft className="size-4" />
-                    Back to home
+                    {t("admin.backToHome")}
                 </Link>
 
                 <div className="mb-6 h-px w-12 bg-brand-400" />
                 <h1 className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                    Admin — API call counts
+                    {t("admin.title")}
                 </h1>
-                <p className="mt-2 text-md text-tertiary">
-                    External API requests since last server restart.
-                </p>
+                <p className="mt-2 text-md text-tertiary">{t("admin.subtitle")}</p>
 
                 <div className="mt-8 flex flex-wrap gap-3">
                     <Button
@@ -76,7 +76,7 @@ export const Admin = () => {
                         onClick={fetchStats}
                         isDisabled={loading}
                     >
-                        Refresh
+                        {t("common.actions.refresh")}
                     </Button>
                     <Button
                         size="md"
@@ -85,7 +85,7 @@ export const Admin = () => {
                         onClick={handleReset}
                         isDisabled={loading || total === 0}
                     >
-                        Reset counts
+                        {t("admin.resetCounts")}
                     </Button>
                 </div>
 
@@ -95,18 +95,16 @@ export const Admin = () => {
 
                 <section className="mt-8 rounded-xl border border-secondary bg-white dark:bg-primary">
                     {loading ? (
-                        <div className="p-8 text-center text-tertiary">Loading…</div>
+                        <div className="p-8 text-center text-tertiary">{t("common.actions.loading")}</div>
                     ) : entries.length === 0 ? (
-                        <div className="p-8 text-center text-tertiary">
-                            No API calls recorded yet.
-                        </div>
+                        <div className="p-8 text-center text-tertiary">{t("admin.noCalls")}</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-secondary bg-secondary_alt/30">
-                                        <th className="px-4 py-3 text-left font-semibold text-secondary">API</th>
-                                        <th className="px-4 py-3 text-right font-semibold text-secondary">Calls</th>
+                                        <th className="px-4 py-3 text-left font-semibold text-secondary">{t("admin.table.api")}</th>
+                                        <th className="px-4 py-3 text-right font-semibold text-secondary">{t("admin.table.calls")}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -124,7 +122,7 @@ export const Admin = () => {
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t-2 border-secondary bg-secondary_alt/30 font-semibold">
-                                        <td className="px-4 py-3 text-primary">Total</td>
+                                        <td className="px-4 py-3 text-primary">{t("admin.table.total")}</td>
                                         <td className="px-4 py-3 text-right tabular-nums text-secondary">
                                             {total.toLocaleString()}
                                         </td>

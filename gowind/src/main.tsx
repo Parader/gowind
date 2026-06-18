@@ -22,12 +22,14 @@ import { AuthProvider } from "@/providers/auth-provider";
 import { SetupProvider } from "@/providers/setup-provider";
 import { RouteProvider } from "@/providers/router-provider";
 import { CookieConsentProvider } from "@/providers/cookie-consent-provider";
+import { LocaleProvider } from "@/providers/locale-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import "@/styles/globals.css";
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <ThemeProvider defaultTheme="light">
+            <LocaleProvider>
             <BrowserRouter>
                 <ScrollToTop />
                 <CookieConsentProvider>
@@ -59,6 +61,7 @@ createRoot(document.getElementById("root")!).render(
                 </AuthProvider>
                 </CookieConsentProvider>
             </BrowserRouter>
+            </LocaleProvider>
         </ThemeProvider>
     </StrictMode>,
 );

@@ -4,9 +4,11 @@ import { Lock01, Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { useAuth } from "@/providers/auth-provider";
+import { useT } from "@/providers/locale-provider";
 
 export const Signup = () => {
     const { signup, getGoogleLoginUrl } = useAuth();
+    const t = useT();
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -22,7 +24,7 @@ export const Signup = () => {
         try {
             await signup(email, password, name || undefined);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Sign up failed");
+            setError(err instanceof Error ? err.message : t("auth.signup.signUpFailed"));
         } finally {
             setIsLoading(false);
         }
@@ -47,10 +49,10 @@ export const Signup = () => {
                     <div className="glass-strong rounded-2xl px-6 py-8 md:px-10 md:py-12">
                         <div className="mb-6 h-px w-12 bg-brand-400" />
                         <h1 className="text-display-sm font-semibold tracking-tight text-primary">
-                            Create your account
+                            {t("auth.signup.title")}
                         </h1>
                         <p className="mt-2 text-md text-tertiary">
-                            Get started with GoWind and find your next good wind window.
+                            {t("auth.signup.subtitle")}
                         </p>
 
                         <form
@@ -59,16 +61,16 @@ export const Signup = () => {
                         >
                             <Input
                                 name="fullName"
-                                label="Name"
-                                placeholder="Your name"
+                                label={t("auth.signup.nameLabel")}
+                                placeholder={t("auth.signup.namePlaceholder")}
                                 size="md"
                                 autoComplete="name"
                             />
                             <Input
                                 name="email"
                                 type="email"
-                                label="Email"
-                                placeholder="you@example.com"
+                                label={t("auth.signup.emailLabel")}
+                                placeholder={t("auth.signup.emailPlaceholder")}
                                 icon={Mail01}
                                 size="md"
                                 isRequired
@@ -77,8 +79,8 @@ export const Signup = () => {
                             <Input
                                 name="password"
                                 type="password"
-                                label="Password"
-                                placeholder="Create a password"
+                                label={t("auth.signup.passwordLabel")}
+                                placeholder={t("auth.signup.passwordPlaceholder")}
                                 icon={Lock01}
                                 size="md"
                                 isRequired
@@ -95,12 +97,12 @@ export const Signup = () => {
                                 isLoading={isLoading}
                                 isDisabled={isLoading}
                             >
-                                Create account
+                                {t("auth.signup.submit")}
                             </Button>
 
                             <div className="my-4 flex items-center gap-3">
                                 <div className="flex-1 border-t border-secondary" />
-                                <span className="text-sm text-tertiary dark:text-secondary">or</span>
+                                <span className="text-sm text-tertiary dark:text-secondary">{t("auth.signup.or")}</span>
                                 <div className="flex-1 border-t border-secondary" />
                             </div>
 
@@ -112,17 +114,17 @@ export const Signup = () => {
                                 onClick={handleGoogleSignup}
                                 isDisabled={isLoading}
                             >
-                                Sign up with Google
+                                {t("auth.signup.google")}
                             </Button>
                         </form>
 
                         <p className="mt-8 text-center text-sm text-tertiary">
-                            Already have an account?{" "}
+                            {t("auth.signup.hasAccount")}{" "}
                             <Link
                                 to="/login"
                                 className="font-semibold text-secondary underline decoration-transparent underline-offset-2 hover:decoration-current"
                             >
-                                Sign in
+                                {t("auth.signup.signIn")}
                             </Link>
                         </p>
                     </div>
@@ -132,7 +134,7 @@ export const Signup = () => {
                             to="/"
                             className="text-sm text-quaternary hover:text-tertiary"
                         >
-                            ← Back to home
+                            {t("auth.signup.backToHome")}
                         </Link>
                     </p>
                 </div>

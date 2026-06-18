@@ -1,0 +1,921 @@
+export const contentFr = {
+    landing: {
+        hero: {
+            title: "Trouvez votre prochaine bonne fenêtre de vent",
+            subtitle:
+                "GoWind analyse les prévisions et met en évidence les moments où les conditions correspondent à vos limites — pour que vous passiez moins de temps à vérifier et plus de temps dehors.",
+            checkGoTimes: "Voir mes Go Times",
+            signUp: "Inscription",
+            logIn: "Connexion",
+            tagline: "Gratuit · Conçu pour les pilotes de paramoteur et les activités sensibles au vent",
+            scrollAria: "Défiler vers comment ça marche",
+            learnMore: "En savoir plus",
+        },
+        value: {
+            eyebrow: "VALEUR",
+            title: "Ce que fait GoWind",
+            paragraph1:
+                "La plupart des apps météo affichent des prévisions brutes. GoWind se concentre sur quelque chose de plus simple : trouver la prochaine bonne fenêtre horaire.",
+            paragraph2:
+                "Au lieu de consulter plusieurs apps météo et d'interpréter des graphiques de vent, GoWind parcourt les données de prévision et met en évidence les moments qui correspondent à vos conditions. Vous répondez rapidement à la question : « Quand et où les conditions sont-elles bonnes? »",
+            demoUrl: "go-wind.com",
+        },
+        howItWorks: {
+            eyebrow: "PROCESSUS",
+            title: "Comment ça marche",
+            subtitle: "Trois étapes simples pour trouver votre prochaine bonne fenêtre.",
+            steps: {
+                addLocations: {
+                    title: "Ajoutez vos lieux",
+                    description:
+                        "Surveillez les endroits où vous voulez vérifier les conditions — sites de vol, collines, lacs ou zones extérieures.",
+                },
+                setPreferences: {
+                    title: "Définissez vos préférences",
+                    description:
+                        "Définissez les conditions qui vous conviennent : vitesse du vent, rafales, température, précipitations, moment de la journée préféré et durée souhaitée de sortie. Chacun a ses limites; GoWind s'adapte à vos réglages personnels.",
+                },
+                discoverWindows: {
+                    title: "Découvrez les bonnes fenêtres",
+                    description:
+                        "GoWind analyse les prévisions météo et met en évidence les fenêtres horaires qui correspondent à vos préférences. Vous voyez instantanément quand les conditions sont suffisamment bonnes pour sortir.",
+                },
+            },
+        },
+        activities: {
+            eyebrow: "ACTIVITÉS",
+            title: "Conçu pour les activités sensibles au vent",
+            description:
+                "GoWind a d'abord été conçu pour les pilotes de paramoteur, où les conditions de vent déterminent si le vol est possible. Il peut aussi aider à planifier toute activité où le moment et la météo comptent.",
+            list: {
+                paramotor: "Paramoteur",
+                paragliding: "Parapente",
+                sailing: "Voile",
+                kiteSurfing: "Kitesurf",
+                droneFlying: "Vol de drone",
+                hiking: "Randonnée",
+                outdoorPhotography: "Photo en plein air",
+            },
+        },
+        different: {
+            eyebrow: "DIFFÉRENT",
+            title: "Pourquoi GoWind est différent",
+            intro:
+                "Go Time réutilise les mêmes cartes de fenêtre partout — vous changez seulement la tranche.",
+            next: "Prochain",
+            best: "Meilleur",
+            all: "Tout",
+            introSuffix:
+                " dans l'appli correspondent aux idées ci-dessous, avec plusieurs modèles de prévision fusionnés en arrière-plan.",
+            focusLines: {
+                next: "La fenêtre la plus tôt qui respecte encore vos limites, avec les créneaux bons avant les marginaux quand les deux sont à venir.",
+                best: "La meilleure adéquation dans les sept prochains jours — pour un lieu enregistré ou toute votre liste.",
+                all: "Chaque fenêtre dans la portée, regroupée par jour et par lieu — quand vous voulez la vue d'ensemble.",
+            },
+            dataSourcesEyebrow: "Sources de données",
+        },
+        dataSources: {
+            openMeteo: "Open-Meteo",
+            weatherApi: "WeatherAPI",
+            meteosource: "Meteosource",
+            visualCrossing: "Visual Crossing",
+        },
+        support: {
+            eyebrow: "SOUTIEN",
+            title: "Remercier le projet",
+            description:
+                "GoWind est un projet passion. S'il vous aide à planifier des journées plus sûres et agréables dehors, vous pouvez contribuer — ça permet de garder les prévisions actives et le service en marche.",
+            donate: "Faire un don",
+        },
+        finalCta: {
+            title: "GoWind",
+            headline: "Sachez quand et où sortir.",
+            description:
+                "Au lieu de consulter constamment les prévisions, GoWind vous aide à voir rapidement quand les conditions correspondent à vos préférences. Que vous planifiiez un vol, une randonnée ou une session sur l'eau, GoWind vous aide à trouver la bonne fenêtre.",
+            checkGoTimes: "Voir mes Go Times",
+            getStarted: "Commencer gratuitement",
+        },
+    },
+
+    auth: {
+        login: {
+            title: "Connexion à GoWind",
+            subtitle: "Entrez vos identifiants pour accéder à vos fenêtres de vent.",
+            google: "Se connecter avec Google",
+            orEmail: "ou continuer avec le courriel",
+            emailLabel: "Courriel",
+            emailPlaceholder: "vous@exemple.com",
+            passwordLabel: "Mot de passe",
+            passwordPlaceholder: "Entrez votre mot de passe",
+            rememberMe: "Se souvenir de moi",
+            forgotPassword: "Mot de passe oublié?",
+            submit: "Connexion",
+            signInFailed: "Échec de la connexion",
+            noAccount: "Vous n'avez pas de compte?",
+            signUpFree: "Inscription gratuite",
+            backToHome: "← Retour à l'accueil",
+        },
+        signup: {
+            title: "Créez votre compte",
+            subtitle: "Commencez avec GoWind et trouvez votre prochaine bonne fenêtre de vent.",
+            nameLabel: "Nom",
+            namePlaceholder: "Votre nom",
+            emailLabel: "Courriel",
+            emailPlaceholder: "vous@exemple.com",
+            passwordLabel: "Mot de passe",
+            passwordPlaceholder: "Créez un mot de passe",
+            submit: "Créer le compte",
+            signUpFailed: "Échec de l'inscription",
+            or: "ou",
+            google: "S'inscrire avec Google",
+            hasAccount: "Vous avez déjà un compte?",
+            signIn: "Connexion",
+            backToHome: "← Retour à l'accueil",
+        },
+    },
+
+    about: {
+        eyebrow: "À propos",
+        title: "Pourquoi j'ai créé GoWind",
+        intro:
+            "GoWind a commencé comme un outil que j'ai bâti pour moi-même : une façon plus rapide de trouver le prochain jour volable sans fouiller prévision après prévision.",
+        story: {
+            p1: "Comme la plupart des pilotes de paramoteur, je passais beaucoup trop de temps à vérifier les prévisions météo. J'ouvrais une app pour la vitesse du vent, une autre pour les rafales, une autre pour la direction, puis j'essayais de tout assembler pour savoir si ça valait la peine de préparer mon équipement et d'aller au terrain.",
+            p2: "La plupart du temps, je ne cherchais pas plus de données météo.",
+            p3: "Je cherchais une réponse simple :",
+            quote: "C'est quand ma prochaine bonne fenêtre de vol?",
+            p4: "Alors j'ai commencé à bâtir GoWind.",
+            p5: "L'idée était simple : enregistrer mes sites de vol favoris, définir mes limites personnelles et laisser l'appli parcourir la prévision pour moi. Au lieu de vérifier manuellement des dizaines de prévisions horaires, je pouvais voir instantanément les prochaines occasions de voler.",
+            p6: "Je l'ai surtout bâti pour moi et je l'utilise encore chaque fois que je planifie un vol. Avant longtemps, j'ai réalisé que d'autres pilotes pourraient aussi le trouver utile.",
+            p7: "Aujourd'hui, GoWind reste un outil simple axé sur un seul objectif : aider les pilotes à passer moins de temps à analyser la météo et plus de temps à faire ce qu'ils aiment vraiment : voler.",
+            p8: "Pas de configuration compliquée. Pas de chasse aux prévisions sans fin.",
+            p9: "Juste une façon plus rapide de trouver le prochain jour volable.",
+        },
+        builtByPilot: {
+            title: "Bâti par un pilote",
+            p1: "Je suis Dérick, designer logiciel, développeur et pilote de paramoteur du Canada. Ce qui a commencé comme un projet personnel est devenu quelque chose que j'utilise chaque semaine, et maintenant quelque chose que je peux partager avec d'autres pilotes.",
+            p2: "Si vous avez des idées, des commentaires ou des demandes de fonctionnalités, j'aimerais vous entendre. GoWind évolue encore, et plusieurs des meilleures améliorations viennent directement d'autres pilotes.",
+            p3: "On se voit dans les airs. ✈️",
+        },
+        photo: {
+            alt: "Dérick Paradis et son ami Roger après le premier vol de Dérick",
+            captionTitle: "Dérick et Roger",
+            caption:
+                "Dérick, créateur de GoWind, à droite avec son ami Roger après leur premier vol.",
+        },
+        donate: {
+            eyebrow: "Soutenir GoWind",
+            title: "Contribuer à la plateforme",
+            description:
+                "GoWind est un petit projet passion bâti pour les pilotes. S'il vous a aidé à trouver une bonne fenêtre de vol, votre soutien aide à maintenir les prévisions et à améliorer la plateforme.",
+            button: "Offrir un verre",
+        },
+    },
+
+    privacy: {
+        eyebrow: "Mentions légales",
+        title: "Politique de confidentialité",
+        lastUpdated: "Dernière mise à jour : {{date}}",
+        sections: {
+            introduction: {
+                title: "1. Introduction",
+                body: 'GoWind (« nous », « notre » ou « nos ») s\'engage à protéger votre vie privée. Cette politique de confidentialité explique comment nous recueillons, utilisons, divulguons et protégeons vos renseignements lorsque vous utilisez notre service de recherche de fenêtres de vent sur gowind.app et les services connexes (le « Service »).',
+            },
+            informationWeCollect: {
+                title: "2. Renseignements recueillis",
+                intro:
+                    "Nous recueillons les renseignements que vous nous fournissez directement et ceux obtenus automatiquement lorsque vous utilisez le Service.",
+                youProvide: "Renseignements que vous fournissez :",
+                items: {
+                    account: "Compte : adresse courriel, nom (si vous choisissez de le fournir)",
+                    locations: "Lieux : sites de vol et points de vérification ajoutés à votre compte",
+                    preferences: "Préférences : limites de vent, plage de température et autres conditions configurées",
+                    authentication: "Authentification : lors de l'inscription ou de la connexion (y compris via Google)",
+                },
+            },
+            howWeUse: {
+                title: "3. Utilisation de vos renseignements",
+                intro: "Nous utilisons les renseignements recueillis pour :",
+                items: {
+                    provide: "Fournir, maintenir et améliorer le Service",
+                    forecasts: "Obtenir et analyser les prévisions météo pour vos lieux enregistrés",
+                    notifications: "Vous envoyer des avis liés au service (si vous y consentez)",
+                    support: "Répondre à vos demandes et questions de soutien",
+                    fraud: "Prévenir la fraude et les abus",
+                },
+            },
+            dataSharing: {
+                title: "4. Partage des données",
+                intro: "Nous ne vendons pas vos renseignements personnels. Nous pouvons partager vos données avec :",
+                items: {
+                    weather: "Fournisseurs de données météo (p. ex. Open-Meteo) lors de la récupération des prévisions pour vos lieux",
+                    providers: "Fournisseurs de services qui nous aident à exploiter le Service (hébergement, analytique)",
+                    legal: "Autorités légales lorsque la loi l'exige",
+                },
+            },
+            dataRetention: {
+                title: "5. Conservation des données",
+                body: "Nous conservons les données de votre compte et vos lieux enregistrés tant que votre compte est actif. Si vous supprimez votre compte, nous retirerons vos renseignements personnels dans un délai raisonnable.",
+            },
+            yourRights: {
+                title: "6. Vos droits",
+                intro: "Vous pouvez :",
+                items: {
+                    access: "Accéder, mettre à jour ou supprimer votre compte et vos données dans l'appli",
+                    export: "Exporter vos données (communiquez avec nous pour en faire la demande)",
+                    optOut: "Refuser les communications non essentielles",
+                    cookies: "Retirer votre consentement aux témoins en tout temps via Paramètres des témoins dans le pied de page",
+                },
+            },
+            cookies: {
+                title: "7. Témoins et technologies similaires",
+                intro:
+                    "Nous utilisons des témoins et le stockage local pour faire fonctionner GoWind. En vertu du RGPD et de la Loi 25 du Québec, nous demandons votre consentement avant d'utiliser des témoins non essentiels.",
+                essential: "Essentiels (toujours actifs) :",
+                essentialItems: {
+                    auth: "Jetons d'authentification et données de session pour vous garder connecté",
+                    theme: "Préférences de thème et d'interface",
+                    security: "Sécurité et prévention de la fraude liées à votre compte",
+                },
+                analytics: "Analytique (optionnel, consentement requis) :",
+                analyticsItems: {
+                    usage: "Analytique d'utilisation pour comprendre comment le Service est utilisé et l'améliorer",
+                },
+                manage:
+                    "Vous pouvez accepter, refuser ou personnaliser ces préférences via la bannière de témoins ou le lien Paramètres des témoins dans le pied de page. Vous pouvez modifier votre choix en tout temps.",
+            },
+            contact: {
+                title: "8. Contact",
+                body: "Pour toute question liée à la confidentialité, communiquez avec nous à l'adresse courriel ou à l'adresse indiquée sur la page À propos.",
+            },
+        },
+    },
+
+    terms: {
+        eyebrow: "Mentions légales",
+        title: "Conditions d'utilisation",
+        lastUpdated: "Dernière mise à jour : {{date}}",
+        sections: {
+            acceptance: {
+                title: "1. Acceptation des conditions",
+                body: 'En accédant à GoWind ou en l\'utilisant (le « Service »), vous acceptez d\'être lié par ces conditions d\'utilisation. Si vous n\'acceptez pas, n\'utilisez pas le Service.',
+            },
+            description: {
+                title: "2. Description du service",
+                body: "GoWind est un outil de recherche de fenêtres de vent qui vous aide à identifier quand et où les conditions météo correspondent à vos préférences pour des activités de plein air comme le paramoteur, le parapente, la voile, le kitesurf et d'autres activités sensibles au vent. Le Service fournit une analyse des prévisions météo et des recommandations personnalisées selon les lieux et préférences que vous configurez.",
+            },
+            weatherData: {
+                title: "3. Utilisation des données météo",
+                body: "Les prévisions météo sont fournies par des fournisseurs tiers (p. ex. Open-Meteo, WeatherAPI). GoWind ne garantit pas l'exactitude, l'exhaustivité ou l'actualité des données de prévision. Les conditions météo peuvent changer rapidement. Ne vous fiez pas uniquement à GoWind pour des décisions d'aviation ou critiques pour la sécurité. Vérifiez toujours les conditions auprès de sources officielles et exercez votre jugement.",
+            },
+            eligibility: {
+                title: "4. Admissibilité",
+                body: "Vous devez avoir au moins 13 ans pour utiliser le Service. Si vous avez moins de 18 ans, vous devriez obtenir le consentement d'un parent ou tuteur. Vous êtes responsable de vous assurer que votre utilisation respecte les lois locales applicables.",
+            },
+            account: {
+                title: "5. Responsabilités du compte",
+                body: "Vous êtes responsable de la confidentialité de vos identifiants de compte et de toute activité sous votre compte. Vous acceptez de fournir des renseignements exacts et de nous aviser rapidement de toute utilisation non autorisée.",
+            },
+            acceptableUse: {
+                title: "6. Utilisation acceptable",
+                intro: "Vous acceptez de ne pas :",
+                items: {
+                    unlawful: "Utiliser le Service à des fins illégales",
+                    unauthorized: "Tenter d'obtenir un accès non autorisé à nos systèmes ou aux comptes d'autres utilisateurs",
+                    interfere: "Interférer avec le Service ou son infrastructure ou le perturber",
+                    scrape: "Extraire, récolter ou utiliser abusivement les données du Service",
+                    resell: "Revendre ou sous-licencier l'accès au Service sans permission",
+                },
+            },
+            disclaimer: {
+                title: "7. Exclusion de garanties",
+                body: 'Le Service est fourni « tel quel » et « selon disponibilité » sans garantie d\'aucune sorte, expresse ou implicite. Nous ne garantissons pas que le Service sera ininterrompu, sans erreur ou adapté à un usage particulier. L\'utilisation du Service pour voler ou pour d\'autres activités comportant des risques physiques se fait à vos propres risques.',
+            },
+            liability: {
+                title: "8. Limitation de responsabilité",
+                body: "Dans la mesure permise par la loi, GoWind et ses opérateurs ne seront pas responsables de dommages indirects, accessoires, spéciaux, consécutifs ou punitifs, ni de toute perte de profits, de données ou de goodwill découlant de votre utilisation du Service. Cela inclut, sans s'y limiter, les décisions prises en fonction des renseignements météo affichés par le Service.",
+            },
+            changes: {
+                title: "9. Modifications",
+                body: 'Nous pouvons mettre à jour ces conditions de temps à autre. Nous vous aviserons des changements importants en publiant les conditions mises à jour et en modifiant la date de « Dernière mise à jour ». L\'utilisation continue du Service après les changements constitue l\'acceptation des conditions révisées.',
+            },
+            contact: {
+                title: "10. Contact",
+                body: "Pour toute question concernant ces conditions, communiquez avec nous via les renseignements fournis sur la page À propos.",
+            },
+        },
+    },
+
+    notFound: {
+        errorCode: "Erreur 404",
+        title: "Nous ne trouvons pas cette page",
+        description: "Désolé, la page que vous cherchez n'existe pas ou a été déplacée.",
+        takeMeHome: "Retour à l'accueil",
+    },
+
+    accountSettings: {
+        backToHome: "Retour à l'accueil",
+        title: "Paramètres du compte",
+        subtitle: "Gérez votre compte GoWind.",
+        profile: {
+            title: "Profil",
+            email: "Courriel",
+            name: "Nom",
+        },
+    },
+
+    admin: {
+        backToHome: "Retour à l'accueil",
+        title: "Admin — Compteurs d'appels API",
+        subtitle: "Requêtes API externes depuis le dernier redémarrage du serveur.",
+        resetCounts: "Réinitialiser les compteurs",
+        resetConfirm: "Réinitialiser tous les compteurs d'appels API?",
+        failedLoad: "Échec du chargement des statistiques",
+        failedReset: "Échec de la réinitialisation",
+        noCalls: "Aucun appel API enregistré pour l'instant.",
+        table: {
+            api: "API",
+            calls: "Appels",
+            total: "Total",
+        },
+    },
+
+    goTime: {
+        page: {
+            title: "Go Time",
+            subtitle: "Décidez quand et où voler — choisissez une vue qui correspond à ce dont vous avez besoin maintenant.",
+            runSetupAgain: "Relancer la configuration",
+            forecastSettingsAria: "Sources de prévision et paramètres de données",
+            forecastSettingsTitle: "Sources de prévision et paramètres de données",
+            providerStatus: {
+                partial: "{{successCount}} ok · {{failCount}} échoué(s)",
+                fromCache: "Depuis le cache",
+                fetched: "Récupéré",
+                fetchFailed: "Échec de récupération",
+                unavailable: "Statut indisponible",
+            },
+            dataFrom: "Données de {{providers}}.",
+            minimumWindow: "Fenêtre minimale : {{minutes}} min.",
+            heights: "Altitudes : {{heights}}.",
+            weatherFromApis: "Météo des API : {{timeAgo}}.",
+            groundHeight: "Sol (10 m)",
+            heightFt: "{{height}} pi",
+            failedLoad: "Échec du chargement",
+            loadingLabel: "Récupération des dernières fenêtres de vent…",
+            loadingHint:
+                "Nous combinons plusieurs sources de prévision et les comparons à vos préférences.",
+            noWindows:
+                "Aucune fenêtre de vent trouvée pour vos lieux et préférences. Essayez d'élargir vos limites ou d'ajouter des lieux.",
+            verified: {
+                title: "Ce que nous avons vérifié",
+                checked:
+                    "Vérifié {{locations}} du {{from}} au {{to}} avec {{providers}}.",
+                slicesChecked: "{{count}} créneaux horaires vérifiés",
+                goodHours: "{{count}} heures bonnes",
+                marginalHours: "{{count}} heures marginales",
+                noGoHours: "{{count}} heures à éviter",
+                note: "Les heures bonnes sont des scores horaires de chaque source météo. Les fenêtres listées appliquent des règles supplémentaires par-dessus ces scores.",
+            },
+            nearMisses: {
+                title: "À quel point c'est proche",
+                description:
+                    "Presque-conformes qui ont failli respecter vos préférences. Les plages horaires utilisent votre durée minimale de session ({{minutes}} min); le score et les conditions proviennent du début de cette fenêtre.",
+                whereYouCanFly: "Où vous pouvez voler : {{locationName}}",
+                score: "Score {{score}}",
+                wind: "Vent {{speed}} km/h",
+                gusts: "Rafales {{speed}} km/h",
+                precip: "Précip. {{percent}}%",
+            },
+            defaultLocation: "Lieu",
+        },
+        focusViews: {
+            tabs: {
+                next: "Prochain",
+                best: "Meilleur",
+                all: "Tout",
+            },
+            goodOnly: "Bon seulement",
+            locationFilterAria: "Filtre de lieu",
+            allLocations: "Tous les lieux",
+            scopeAllLocations: "tous les lieux",
+            scopeThisLocation: "ce lieu",
+            next: {
+                title: "Quand pouvez-vous sortir ensuite?",
+                description:
+                    "La fenêtre {{good}} la plus tôt d'abord; s'il n'y en a pas, la marginale la plus tôt, puis les autres — jamais un créneau plus faible devant un plus fort.",
+                goodEmphasis: "bonne",
+                scope: "Portée : {{scope}}.",
+                noteMarginal:
+                    "Pas encore de créneau « bon » — voici les fenêtres à venir qui respectent encore vos limites (marginales).",
+                noteNoGo:
+                    "Pas encore de créneau bon ou marginal — voici les fenêtres que nous avons pu former à partir de la prévision.",
+                navLabel: "Parcourir les prochaines fenêtres",
+                emptyTitle: "Aucune fenêtre à venir",
+                emptyGoodOnly:
+                    "Aucune fenêtre classée bonne n'est prévue. Désactivez « Bon seulement » ou ajustez votre configuration.",
+                emptyDefault:
+                    "Aucune fenêtre de prévision ne correspond à vos préférences. Essayez d'élargir vos limites ou d'ajouter des lieux.",
+            },
+            best: {
+                title: "Quel est le meilleur créneau cette semaine?",
+                description: "Meilleure adéquation dans les sept prochains jours ({{scope}}).",
+                navLabel: "Parcourir les meilleures fenêtres de la semaine",
+                emptyTitle: "Aucune fenêtre dans les 7 prochains jours",
+                emptyGoodOnly:
+                    "Aucune fenêtre classée bonne dans la plage. Essayez de désactiver « Bon seulement » ou vérifiez vos limites.",
+                emptyDefault: "Rien dans la semaine à venir ne correspond à vos préférences.",
+            },
+            all: {
+                title: "Toutes les fenêtres",
+                description:
+                    "Liste complète des fenêtres de prévision pour {{scope}}, regroupée par jour et par lieu — même horizon que Prochain et Meilleur, avec chaque créneau visible.",
+                emptyTitle: "Aucune fenêtre ne correspond",
+                emptyGoodOnly:
+                    "Rien dans cette portée avec « Bon seulement » activé. Désactivez-le ou élargissez votre configuration.",
+                emptyDefault: "Aucune fenêtre de prévision ne correspond à vos filtres actuels.",
+            },
+            swiper: {
+                prevSlide: "Fenêtre de vent précédente",
+                nextSlide: "Fenêtre de vent suivante",
+                paginationBullet: "Aller à la fenêtre de vent {{index}}",
+                prevWindow: "Fenêtre précédente",
+                nextWindow: "Fenêtre suivante",
+                pagesAria: "Pages de fenêtres de vent",
+                goToWindow: "Aller à la fenêtre de vent {{index}}",
+                showing: "Affichage de la fenêtre de vent {{current}} sur {{total}}.",
+                counter: "{{current}}/{{total}}",
+            },
+        },
+        windowCard: {
+            categories: {
+                good: "Bon",
+                marginal: "Marginal",
+                notIdeal: "Peu idéal",
+                noGo: "À éviter",
+            },
+            metrics: {
+                wind: "Vent",
+                gusts: "Rafales",
+                temp: "Temp.",
+                precip: "Précip.",
+                score: "Score",
+                reliability: "Fiabilité",
+                kmh: "km/h",
+                acrossModels: "Entre modèles {{min}}–{{max}} km/h",
+                acrossModelsTemp: "Entre modèles {{min}}–{{max}} °C",
+                acrossModelsPrecip: "Entre modèles {{min}}–{{max}}%",
+                heightWind: "{{label}} : {{min}}–{{max}} km/h",
+            },
+            share: {
+                button: "Partager",
+                aria: "Partager cette fenêtre Go Time",
+                shared: "Partagé",
+                copied: "Copié",
+                failed: "Échec",
+                nativeTitle: "Fenêtre GoWind partagée",
+                text: "Fenêtre de vol GoWind{{atLocation}} : {{when}}",
+                atLocation: " à {{location}}",
+            },
+            score: {
+                tooltipTitle: "Comment le score est calculé",
+                tooltipLine1:
+                    "Le score est la moyenne d'adéquation aux préférences (0–100) pour chaque heure de cette fenêtre : vent, rafales, température et précipitations par rapport aux limites que vous avez définies.",
+                tooltipLine2:
+                    "Les prévisions sont fusionnées en une heure combinée avant le calcul, de sorte que chaque heure reflète l'accord entre les sources lorsque c'est possible.",
+            },
+            windy: {
+                link: "Consulter sur\u00A0Windy.com",
+                title:
+                    "Ouvre Windy à votre lieu enregistré avec un repère; l'heure de prévision correspond au début de cette fenêtre (pas UTC).",
+            },
+            disagreement: "Désaccord entre certaines sources",
+            trend: {
+                tooltipTitle: "Tendance dans cette fenêtre",
+                steady: "Dans cette fenêtre : {{start}} {{unit}} au début → {{end}} {{unit}} à la fin (stable)",
+                rising: "Dans cette fenêtre : en hausse de {{start}} à {{end}} {{unit}} (première heure → dernière heure)",
+                falling: "Dans cette fenêtre : en baisse de {{start}} à {{end}} {{unit}} (première heure → dernière heure)",
+                windEasing: "Vent et rafales qui diminuent dans la fenêtre",
+                improving: "Conditions qui s'améliorent dans la fenêtre",
+                worsening: "Conditions qui se dégradent dans la fenêtre",
+                steadyConditions: "Conditions stables dans la fenêtre",
+                windPickingUp: "Vent qui augmente dans la fenêtre",
+                windEasingShort: "Vent qui diminue dans la fenêtre",
+                gustsRising: "Rafales en hausse dans la fenêtre",
+                gustsEasing: "Rafales en baisse dans la fenêtre",
+            },
+            charts: {
+                title: "Graphiques",
+                trendsTitle: "Tendances (cette fenêtre)",
+                trendsAria: "Courbes de tendance pour cette fenêtre",
+                firstVsLast: " — première vs dernière heure de la fenêtre : ",
+                showSeries: "Afficher cette série",
+                hideSeries: "Cliquer pour masquer cette série",
+                rangeWind: "{{min}}–{{max}} km/h",
+                rangeTemp: "{{min}}–{{max}} °C",
+                rangePrecip: "{{min}}–{{max}} %",
+                rangeScore: "{{min}}–{{max}}%",
+                startEndWind: "Début {{start}} km/h → fin {{end}} km/h",
+                startEndTemp: "Début {{start}} °C → fin {{end}} °C",
+                startEndPrecip: "Début {{start}}% → fin {{end}}%",
+                startEndScore: "Début {{start}}% → fin {{end}}%",
+            },
+            details: {
+                title: "Détails",
+                summaryBySource: "Sommaire par source (cette fenêtre)",
+                eachHourBySource: "Chaque heure par source",
+                awayFromBlend: "Écart par rapport au mélange :",
+                table: {
+                    source: "Source",
+                    hours: "Heures",
+                    windKmh: "Vent km/h",
+                    gustKmh: "Rafale km/h",
+                    tempC: "Temp. °C",
+                    precipPct: "Précip. %",
+                    avgScore: "Score moy.",
+                    wind: "Vent",
+                    gust: "Rafale",
+                    temp: "Temp.",
+                    precip: "Précip.",
+                    cat: "Cat.",
+                    score: "Score",
+                },
+            },
+        },
+        providers: {
+            openMeteo: "Open-Meteo",
+            metNorway: "Met Norway",
+            meteosource: "Meteosource",
+            openWeather: "OpenWeather",
+            visualCrossing: "Visual Crossing",
+        },
+    },
+
+    goTimeShare: {
+        eyebrow: "Go Time partagé",
+        title: "Fenêtre de vol partagée",
+        loading: "Chargement de la fenêtre partagée…",
+        snapshotWarning:
+            "Ceci est un instantané partagé depuis GoWind. La météo change rapidement; cette fenêtre pourrait ne plus être valide ou sûre. Vérifiez toujours les conditions actuelles avant de voler.",
+        expires: "Ce lien partagé expire aux alentours de {{date}}.",
+        createAccount: "Créer votre propre compte GoWind",
+        openGoTime: "Ouvrir Go Time",
+        unavailableTitle: "Cette fenêtre partagée n'est plus disponible",
+        unavailableDescription:
+            "Les liens Go Time partagés expirent après quelques heures parce que les données de prévision peuvent devenir obsolètes.",
+        missingId: "Cette fenêtre Go Time partagée n'a pas d'identifiant de partage.",
+        unavailable: "Cette fenêtre Go Time partagée n'est pas disponible.",
+        goToYourGoTime: "Aller à votre Go Time",
+        signUp: "Inscription",
+        logIn: "Connexion",
+    },
+
+    preferences: {
+        page: {
+            title: "Définissez vos conditions préférées",
+            descriptionAutoSave: "Parcourez chaque section — les changements s'enregistrent automatiquement.",
+            descriptionOnboarding: "Parcourez chaque section — votre progression est enregistrée au fil du parcours.",
+        },
+        substeps: {
+            sectionOf: "Section {{current}} sur {{total}}",
+            sectionsAria: "Sections de préférences",
+            wind: {
+                label: "Vent",
+                title: "Vent",
+                subtitle: "Définissez votre plage de vitesse, les limites de rafales et le cisaillement rafale–vent.",
+            },
+            heights: {
+                label: "Altitudes",
+                title: "Altitudes de prévision",
+                subtitle: "Choisissez quelles altitudes utiliser pour le vent et la météo.",
+            },
+            comfort: {
+                label: "Confort",
+                title: "Confort et ciel",
+                subtitle: "Température, ressenti et limites de précipitations.",
+            },
+            timing: {
+                label: "Horaire",
+                title: "Horaire",
+                subtitle: "Plages horaires préférées et durée minimale de session.",
+            },
+        },
+        sections: {
+            categories: "Catégories",
+            wind: {
+                label: "Vent",
+                description: "Vitesse, rafales et cisaillement",
+            },
+            altitude: {
+                label: "Altitudes",
+                description: "Quelles altitudes utiliser",
+            },
+            comfort: {
+                label: "Confort et ciel",
+                description: "Température et précipitations",
+            },
+            timing: {
+                label: "Horaire",
+                description: "Moment de la journée et durée de session",
+            },
+            panelAria: "Préférences — {{section}}",
+        },
+        wind: {
+            knots: "Nœuds",
+            kmh: "km/h",
+            speedRange: "Plage de vitesse du vent",
+            speedRangeValue: "{{min}} — {{max}} nds",
+            speedRangeValueKmh: "{{min}} — {{max}} km/h",
+            maxGust: "Limite maximale de rafales",
+            idealGusting: "Rafales idéales",
+            below: "Sous {{value}}",
+            maxGustDiff: "Écart maximal rafale–vent",
+        },
+        comfort: {
+            feelsLike: "Utiliser la température ressentie",
+            feelsLikeHint: "Filtre selon le ressenti plutôt que la température réelle",
+            feelsLikeAria: "Utiliser la température ressentie",
+            temperatureRange: "Plage de température",
+            temperatureValue: "{{min}}°C — {{max}}°C",
+            precipLimit: "Limite de précipitations",
+            precipHint: "Probabilité maximale de précipitations tolérée",
+        },
+        timing: {
+            timeOfDay: "Moment de la journée",
+            timeOfDayHint: "Sélectionnez une ou plusieurs plages. Personnalisez le début et la fin de chacune.",
+            sessionDuration: "Durée de session",
+            sessionHours: "{{hours}} h",
+            sessionHint: "Fenêtre minimale requise pour une session",
+            start: "Début",
+            end: "Fin",
+            minLabel: "{{minutes}} min",
+        },
+        timeOfDay: {
+            morning: "Matin",
+            afternoon: "Après-midi",
+            evening: "Soir",
+            anytime: "En tout temps",
+        },
+        heights: {
+            aria: "Sélectionner les altitudes de données météo (du sol au ciel)",
+            sky: "Ciel",
+            ground: "Sol",
+            ground10m: "Sol (10 m)",
+            ft500: "500 pi",
+            ft1000: "1 000 pi",
+            ft2000: "2 000 pi",
+            ft3000: "3 000 pi",
+            ft5000: "5 000 pi",
+            ft10000: "10 000 pi",
+            selected: " (sélectionné)",
+            clickToSelect: " (cliquer pour sélectionner)",
+            summarySingleGround: "Sol",
+            summarySingle: "{{height}} pi",
+            summaryRange: "{{low}} → {{high}}",
+        },
+        presets: {
+            quickPresets: "Préréglages rapides :",
+            presetsButton: "Préréglages",
+            modalTitle: "Appliquer le préréglage?",
+            modalBody:
+                'Appliquer le préréglage « {{preset}} »? Cela remplace vos réglages actuels de vent, rafales, température, précipitations, moment de la journée et durée de session (les altitudes de prévision restent inchangées).',
+            apply: "Appliquer le préréglage",
+            labels: {
+                paragliding: "Parapente",
+                hangGliding: "Deltaplane",
+                kitesurfing: "Kitesurf",
+                windsurfing: "Planche à voile",
+                wingFoiling: "Wing foil",
+                sailing: "Voile",
+                surfing: "Surf",
+                sup: "SUP / Paddle",
+                paramotoring: "Paramoteur",
+                running: "Course",
+                hiking: "Randonnée",
+                biking: "Vélo",
+            },
+        },
+        saveChangesAria: "Enregistrer les changements",
+    },
+
+    data: {
+        title: "Données et API",
+        subtitle: "Comparez la météo de toutes les sources pour vos lieux et périodes.",
+        location: "Lieu",
+        allLocations: "Tous les lieux",
+        days: "Jours",
+        day1: "1 jour",
+        day3: "3 jours",
+        day7: "7 jours",
+        viewComparison: "Comparer toutes les sources",
+        viewRaw: "JSON brut",
+        viewAviation: "Aviation",
+        fetchAllSources: "Récupérer toutes les sources",
+        loading: "Chargement…",
+        fetching: "Récupération…",
+        addLocationsFirst: "Ajoutez d'abord des lieux dans Lieux",
+        requestFailed: "Échec de la requête",
+        comparison: {
+            title: "Comparaison météo (toutes les sources)",
+            emptyLocations: "Ajoutez des lieux dans la page Lieux, puis récupérez la météo.",
+            emptyData: 'Cliquez sur « Récupérer toutes les sources » pour charger les données de tous les fournisseurs.',
+            time: "Heure",
+            metricsHeader: "Vent · Raf. · T · P%",
+            cached: " (en cache)",
+            failed: " — échec",
+            noData: "—",
+            tooltipWind: "Vent {{wind}} km/h, Raf. {{gust}}, Temp. {{temp}}°C, Précip. {{precip}}%",
+        },
+        providers: {
+            openMeteo: "Open-Meteo",
+            openWeather: "OpenWeather",
+            meteosource: "Meteosource",
+            visualCrossing: "Visual Crossing",
+            metNorway: "MET Norway",
+            meteosourceHint: " (7 j horaire+quotidien)",
+            metNorwayHint: " (nordique/mondial, gratuit)",
+            openWeatherHint: " (5 j max, 3 h)",
+            meteosourceTooltip: "7 jours : horaire lorsque disponible, repli quotidien",
+            metNorwayTooltip: "Locationforecast 2.0; définir MET_NORWAY_USER_AGENT (courriel/URL)",
+            openWeatherTooltip: "API Forecast5 : 5 jours max, intervalles de 3 heures",
+        },
+        aviation: {
+            title: "Aviation (METAR / TAF)",
+            subtitle:
+                "Observations et prévisions par station. Sans clé API. Utile pour correction de biais et vérifications.",
+            stationIds: "Identifiants de station",
+            placeholder: "CYQB,CYUL,KJFK",
+            fetch: "Récupérer METAR et TAF",
+            metarTitle: "METAR (observations actuelles)",
+            tafTitle: "TAF (prévision)",
+            windSummary: "Vent {{dir}}° {{speed}} nds · Temp. {{temp}}°C",
+            emptyHint:
+                "Entrez des identifiants de station (p. ex. CYQB, CYUL, KJFK) et cliquez sur Récupérer. Codes OACI pour les aéroports.",
+            enterStation: "Entrez au moins un identifiant de station (p. ex. CYQB, KJFK)",
+            fetchFailed: "Échec de la récupération aviation",
+        },
+        raw: {
+            title: "API brute (un fournisseur)",
+            subtitle: "{{provider}}, {{days}} jours. Altitudes : {{heights}} pi",
+            provider: "Fournisseur",
+            fetchAll: "Tout récupérer",
+            emptyLocations: "Ajoutez des lieux dans la page Lieux.",
+            noData: "Aucune donnée. Cliquez sur Récupérer.",
+            providerLabel: "Fournisseur :",
+            fetchedLabel: "Récupéré :",
+            dataLabel: "Données",
+            refresh: "Actualiser",
+            fetch: "Récupérer",
+        },
+    },
+
+    marketing: {
+        footer: {
+            tagline: "Sachez quand et où sortir. Trouvez votre prochaine bonne fenêtre de vent.",
+            copyright: "© {{year}} GoWind. Gratuit.",
+            donate: "Faire un don",
+            columns: {
+                pages: "Pages",
+                legal: "Mentions légales",
+            },
+            links: {
+                home: "Accueil",
+                about: "À propos",
+                privacy: "Confidentialité",
+                terms: "Conditions",
+                cookieSettings: "Paramètres des témoins",
+            },
+            weatherCredit:
+                "Données météo de Open-Meteo, WeatherAPI, Meteosource et Visual Crossing.",
+        },
+    },
+
+    cookieBanner: {
+        title: "Préférences de témoins",
+        description:
+            "Nous utilisons des témoins essentiels et le stockage local pour vous garder connecté, mémoriser votre thème et faire fonctionner GoWind. Avec votre consentement, nous pouvons aussi utiliser des témoins analytiques pour comprendre comment le service est utilisé et l'améliorer. Cet avis respecte le RGPD et la Loi 25 du Québec.",
+        privacyLink: "Politique de confidentialité",
+        essential: {
+            title: "Essentiels",
+            description: "Requis pour la connexion, la sécurité et les fonctions de base de l'appli. Toujours actifs.",
+            alwaysOn: "Toujours actif",
+        },
+        analytics: {
+            title: "Analytique",
+            description: "Nous aide à mesurer le trafic et à améliorer GoWind. Optionnel.",
+            aria: "Activer les témoins analytiques",
+        },
+        close: "Fermer",
+        back: "Retour",
+        savePreferences: "Enregistrer les préférences",
+        managePreferences: "Gérer les préférences",
+        rejectNonEssential: "Refuser les non essentiels",
+        acceptAll: "Tout accepter",
+    },
+
+    onboarding: {
+        progressAria: "Progression",
+        stepCompleted: ", terminé",
+        stepCurrent: ", en cours",
+        steps: {
+            welcome: "Bienvenue",
+            sports: "Activités",
+            locations: "Lieux",
+            preferences: "Préférences",
+            review: "Révision",
+        },
+        welcome: {
+            title: "Trouvez votre prochaine bonne fenêtre de vent",
+            description:
+                "Répondez à quelques questions rapides et GoWind configurera vos lieux et préférences météo.",
+            getStarted: "Commencer",
+        },
+        sports: {
+            title: "Quelle activité pratiquez-vous?",
+            description: "Nous utiliserons cette information pour suggérer les meilleurs réglages météo par défaut.",
+            aria: "Activités",
+            continue: "Continuer",
+        },
+        sportsList: {
+            paragliding: "Parapente",
+            hangGliding: "Deltaplane",
+            kitesurfing: "Kitesurf",
+            windsurfing: "Planche à voile",
+            wingFoiling: "Wing foil",
+            sailing: "Voile",
+            surfing: "Surf",
+            sup: "SUP / Paddle",
+            paramotoring: "Paramoteur",
+            running: "Course",
+            hiking: "Randonnée",
+            biking: "Vélo",
+        },
+        locations: {
+            title: "Choisissez vos lieux",
+            description: "Choisissez un ou plusieurs endroits où vous allez souvent. Vous pourrez les modifier plus tard.",
+            continue: "Continuer vers les préférences",
+        },
+        preferences: {
+            continue: "Continuer",
+            continueToReview: "Continuer vers la révision",
+        },
+        review: {
+            title: "Vous êtes prêt à trouver vos prochaines fenêtres",
+            description:
+                "GoWind va maintenant trouver les meilleures fenêtres à venir selon vos lieux et préférences.",
+            summary: "Sommaire",
+            activity: "Activité",
+            locations: "Lieux",
+            conditions: "Conditions",
+            conditionsValue:
+                "Vent < {{maxWind}} km/h, rafales < {{maxGust}} km/h{{gustDiff}} · {{minTemp}}–{{maxTemp}}°C{{feelsLike}} · Précip. < {{maxPrecip}}%",
+            gustDiff: " (écart max {{diff}} km/h)",
+            feelsLike: " (ressenti)",
+            session: "Session",
+            sessionNone: "Aucune · min {{minutes}} min",
+            sessionBlock: "{{blocks}} · min {{minutes}} min",
+            sessionTime: "{{label}} {{start}} h–{{end}} h",
+            seeWindows: "Voir mes fenêtres",
+        },
+        suggestedLocations: {
+            montreal: { name: "Montréal", region: "Québec" },
+            quebecCity: { name: "Québec", region: "Québec" },
+            airproParamotor: { name: "Airpro Paramoteur", region: "Saint-Apollinaire, Québec" },
+        },
+        windDirections: {
+            any: "Toutes",
+            n: "N",
+            ne: "NE",
+            e: "E",
+            se: "SE",
+            s: "S",
+            sw: "SO",
+            w: "O",
+            nw: "NO",
+        },
+    },
+
+    locationPicker: {
+        manager: {
+            title: "Lieux",
+            description: "Gérez vos sites de vol, collines, lacs et points de vérification extérieurs.",
+            addLocation: "Ajouter un lieu",
+            empty: "Aucun lieu pour l'instant. Ajoutez votre premier site de vol ou point de vérification.",
+            optionsFor: "Options pour {{name}}",
+        },
+        addModal: {
+            title: "Ajouter un lieu",
+            predefined: "Prédéfinis",
+            custom: "Personnalisé",
+            add: "Ajouter",
+            locationNameLabel: "Nom du lieu",
+            locationNamePlaceholder: "p. ex. Champ nord, Vue du lac",
+            selectOnMap: "Sélectionner sur la carte",
+        },
+        mapPicker: {
+            searchAria: "Rechercher sur la carte",
+            searchPlaceholder: "Rechercher une ville, une municipalité ou une adresse…",
+            noResults: "Aucun lieu trouvé. Essayez une autre orthographe ou cliquez sur la carte.",
+            hint: "Recherchez ci-dessus ou cliquez sur la carte pour sélectionner un lieu",
+        },
+    },
+};

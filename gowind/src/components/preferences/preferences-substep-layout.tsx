@@ -5,41 +5,17 @@ import {
     Thermometer02,
     Clock,
 } from "@untitledui/icons";
+import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 import type { PreferenceSectionId } from "@/components/preferences/preferences-form";
 
 export const PREF_SUBSTEP_ICONS = [Wind03, LayersThree01, Thermometer02, Clock] as const;
 
-export const PREF_SUBSTEPS: {
-    section: PreferenceSectionId;
-    label: string;
-    title: string;
-    subtitle: string;
-}[] = [
-    {
-        section: "wind",
-        label: "Wind",
-        title: "Wind",
-        subtitle: "Set your speed range, gust limits, and gust–wind shear.",
-    },
-    {
-        section: "altitude",
-        label: "Heights",
-        title: "Forecast heights",
-        subtitle: "Choose which altitudes to use for wind and weather.",
-    },
-    {
-        section: "comfort",
-        label: "Comfort",
-        title: "Comfort & sky",
-        subtitle: "Temperature, feels-like, and precipitation limits.",
-    },
-    {
-        section: "timing",
-        label: "Timing",
-        title: "Timing",
-        subtitle: "Preferred time windows and minimum session length.",
-    },
+export const PREF_SUBSTEPS: { section: PreferenceSectionId; key: string }[] = [
+    { section: "wind", key: "wind" },
+    { section: "altitude", key: "heights" },
+    { section: "comfort", key: "comfort" },
+    { section: "timing", key: "timing" },
 ];
 
 export interface PreferencesSubstepLayoutProps {
@@ -72,6 +48,7 @@ export function PreferencesSubstepLayout({
     children,
     footer,
 }: PreferencesSubstepLayoutProps) {
+    const t = useT();
     const safeIndex = Math.min(Math.max(activeIndex, 0), PREF_SUBSTEPS.length - 1);
     const sub = PREF_SUBSTEPS[safeIndex];
 
@@ -85,7 +62,7 @@ export function PreferencesSubstepLayout({
             </HeadingTag>
             <p className="mt-2 text-md text-tertiary">{description}</p>
 
-            <nav className="mt-6" aria-label="Preference sections">
+            <nav className="mt-6" aria-label={t("preferences.substeps.sectionsAria")}>
                 <ol className="flex flex-wrap justify-center gap-2 sm:justify-start sm:gap-1.5">
                     {PREF_SUBSTEPS.map((s, i) => {
                         const Icon = PREF_SUBSTEP_ICONS[i];
@@ -108,19 +85,22 @@ export function PreferencesSubstepLayout({
                                         strokeWidth={1.5}
                                         aria-hidden
                                     />
-                                    <span className="whitespace-nowrap">{s.label}</span>
+                                    <span className="whitespace-nowrap">{t(`preferences.substeps.${s.key}.label`)}</span>
                                 </button>
                             </li>
                         );
                     })}
                 </ol>
                 <p className="mt-3 text-center text-xs text-tertiary sm:text-left">
-                    Section {safeIndex + 1} of {PREF_SUBSTEPS.length}
+                    {t("preferences.substeps.sectionOf", {
+                        current: safeIndex + 1,
+                        total: PREF_SUBSTEPS.length,
+                    })}
                 </p>
             </nav>
 
-            <h3 className="mt-6 text-lg font-semibold text-primary">{sub.title}</h3>
-            <p className="mt-1 text-sm text-tertiary">{sub.subtitle}</p>
+            <h3 className="mt-6 text-lg font-semibold text-primary">{t(`preferences.substeps.${sub.key}.title`)}</h3>
+            <p className="mt-1 text-sm text-tertiary">{t(`preferences.substeps.${sub.key}.subtitle`)}</p>
 
             <div className="mt-6 w-full">{children}</div>
 

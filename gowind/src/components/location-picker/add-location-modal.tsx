@@ -10,7 +10,12 @@ import {
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { LocationMapPicker } from "@/components/location-picker/location-map-picker";
-import { SUGGESTED_LOCATIONS } from "@/components/onboarding/onboarding-data";
+import {
+    SUGGESTED_LOCATIONS,
+    suggestedLocationNameKey,
+    suggestedLocationRegionKey,
+} from "@/components/onboarding/onboarding-data";
+import { useT } from "@/providers/locale-provider";
 import type { Location } from "@/types/setup";
 
 interface AddLocationModalProps {
@@ -36,10 +41,14 @@ export function AddLocationModal({
     onClose,
     existingLocations = [],
 }: AddLocationModalProps) {
+    const t = useT();
     const suggestedNotYetAdded = SUGGESTED_LOCATIONS.filter(
         (s) =>
             !existingLocations.some(
-                (l) => l.lat === s.lat && l.lng === s.lng && l.name === s.name
+                (l) =>
+                    l.lat === s.lat &&
+                    l.lng === s.lng &&
+                    l.name === t(suggestedLocationNameKey(s.id))
             )
     );
     const [mode, setMode] = useState<"predefined" | "custom">(
@@ -58,7 +67,7 @@ export function AddLocationModal({
                                     state.close();
                                 }}
                             >
-                                <h3 className="text-lg font-semibold text-primary">Add location</h3>
+                                <h3 className="text-lg font-semibold text-primary">{t("locationPicker.addModal.title")}</h3>
                             </ModalHeader>
                             <div className="mt-6 flex w-full flex-col space-y-4">
                                 <div className="flex gap-2">
@@ -68,7 +77,7 @@ export function AddLocationModal({
                                             color={mode === "predefined" ? "primary" : "tertiary"}
                                             onClick={() => setMode("predefined")}
                                         >
-                                            Predefined
+                                            {t("locationPicker.addModal.predefined")}
                                         </Button>
                                     )}
                                     <Button
@@ -76,58 +85,62 @@ export function AddLocationModal({
                                         color={mode === "custom" ? "primary" : "tertiary"}
                                         onClick={() => setMode("custom")}
                                     >
-                                        Custom
+                                        {t("locationPicker.addModal.custom")}
                                     </Button>
                                 </div>
 
                                 {mode === "predefined" && suggestedNotYetAdded.length > 0 ? (
                                     <div className="flex flex-col gap-2">
-                                        {suggestedNotYetAdded.map((s) => (
-                                            <div
-                                                key={s.id}
-                                                className="flex w-full items-center gap-2 rounded-xl border border-secondary bg-white px-4 py-3 shadow-xs transition hover:border-secondary_alt dark:bg-primary"
-                                            >
-                                                <Map01 className="size-4 shrink-0 text-fg-quaternary" strokeWidth={1.5} />
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-medium text-primary">{s.name}</p>
-                                                    <p className="text-xs text-tertiary">{s.region}</p>
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    color="secondary"
-                                                    className="shrink-0"
-                                                    iconLeading={Plus}
-                                                    onClick={() => {
-                                                        onAddFromSuggested(
-                                                            {
-                                                                name: s.name,
-                                                                lat: s.lat,
-                                                                lng: s.lng,
-                                                                region: s.region,
-                                                            },
-                                                            () => state.close()
-                                                        );
-                                                        onClose();
-                                                    }}
+                                        {suggestedNotYetAdded.map((s) => {
+                                            const name = t(suggestedLocationNameKey(s.id));
+                                            const region = t(suggestedLocationRegionKey(s.id));
+                                            return (
+                                                <div
+                                                    key={s.id}
+                                                    className="flex w-full items-center gap-2 rounded-xl border border-secondary bg-white px-4 py-3 shadow-xs transition hover:border-secondary_alt dark:bg-primary"
                                                 >
-                                                    Add
-                                                </Button>
-                                            </div>
-                                        ))}
+                                                    <Map01 className="size-4 shrink-0 text-fg-quaternary" strokeWidth={1.5} />
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium text-primary">{name}</p>
+                                                        <p className="text-xs text-tertiary">{region}</p>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        color="secondary"
+                                                        className="shrink-0"
+                                                        iconLeading={Plus}
+                                                        onClick={() => {
+                                                            onAddFromSuggested(
+                                                                {
+                                                                    name,
+                                                                    lat: s.lat,
+                                                                    lng: s.lng,
+                                                                    region,
+                                                                },
+                                                                () => state.close()
+                                                            );
+                                                            onClose();
+                                                        }}
+                                                    >
+                                                        {t("locationPicker.addModal.add")}
+                                                    </Button>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 ) : (
                                     <>
                                         <Input
                                             name="newLocationName"
-                                            label="Location name"
-                                            placeholder="e.g. North field, Lake view"
+                                            label={t("locationPicker.addModal.locationNameLabel")}
+                                            placeholder={t("locationPicker.addModal.locationNamePlaceholder")}
                                             value={locationName}
                                             onChange={onLocationNameChange}
                                             size="md"
                                         />
                                         <div className="w-full">
                                             <p className="mb-2 text-sm font-medium text-secondary">
-                                                Select on map
+                                                {t("locationPicker.addModal.selectOnMap")}
                                             </p>
                                             <LocationMapPicker
                                                 value={selectedCoords}
@@ -143,7 +156,7 @@ export function AddLocationModal({
                                                 onClick={() => onAdd(() => state.close())}
                                                 isDisabled={!locationName.trim() || !selectedCoords}
                                             >
-                                                Add location
+                                                {t("locationPicker.addModal.title")}
                                             </Button>
                                             <Button
                                                 size="md"
@@ -153,7 +166,7 @@ export function AddLocationModal({
                                                     state.close();
                                                 }}
                                             >
-                                                Cancel
+                                                {t("common.actions.cancel")}
                                             </Button>
                                         </div>
                                     </>

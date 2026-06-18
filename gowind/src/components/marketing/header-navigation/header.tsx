@@ -4,12 +4,14 @@ import { Link, NavLink, useLocation } from "react-router";
 import { ChevronDown } from "@untitledui/icons";
 import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
+import { LanguageSwitcher } from "@/components/base/language-switcher/language-switcher";
 import { ThemeSwitcher } from "@/components/base/theme-switcher/theme-switcher";
 import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import { GoWindLogoMinimal } from "@/components/foundations/logo/gowind-logo-minimal";
 import { HeaderMobileMenu } from "@/components/marketing/header-navigation/header-mobile-menu";
 import { HeaderProfileMenu } from "@/components/marketing/header-navigation/header-profile-menu";
 import { getCachedAuthUser, useAuth } from "@/providers/auth-provider";
+import { useLocale } from "@/providers/locale-provider";
 import { useSetup } from "@/providers/setup-provider";
 import { useTheme } from "@/providers/theme-provider";
 import { cx } from "@/utils/cx";
@@ -20,10 +22,16 @@ type HeaderNavItem = {
     menu?: ReactNode;
 };
 
-const publicNavItems: HeaderNavItem[] = [
-    { label: "Home", href: "/" },
-    { label: "About", href: "/about" },
-];
+const publicNavHrefs = [
+    { href: "/" },
+    { href: "/about" },
+] as const;
+
+const authenticatedNavHrefs = [
+    { href: "/go-time" },
+    { href: "/locations" },
+    { href: "/preferences" },
+] as const;
 
 interface HeaderProps {
     items?: HeaderNavItem[];
@@ -120,16 +128,25 @@ function useHeaderContrast(isFloating: boolean | undefined, headerRef: RefObject
     return overDarkBackground;
 }
 
-const authenticatedNavItems: HeaderNavItem[] = [
-    { label: "Go Time", href: "/go-time" },
-    { label: "Locations", href: "/locations" },
-    { label: "Preferences", href: "/preferences" },
-];
+const navLabelKey: Record<string, string> = {
+    "/": "common.nav.home",
+    "/about": "common.nav.about",
+    "/go-time": "common.nav.goTime",
+    "/locations": "common.nav.locations",
+    "/preferences": "common.nav.preferences",
+    "/data": "common.nav.data",
+    "/admin": "common.nav.admin",
+};
+
+function hrefToNavItem(href: string, t: (key: string) => string): HeaderNavItem {
+    return { href, label: t(navLabelKey[href] ?? href) };
+}
 
 const lightTextClass = "text-white";
 const darkTextClass = "text-secondary";
 
-export const Header = ({ items = publicNavItems, isFullWidth, isFloating, className }: HeaderProps) => {
+export const Header = ({ items, isFullWidth, isFloating, className }: HeaderProps) => {
+    const { t } = useLocale();
     const headerRef = useRef<HTMLElement>(null);
     const overDarkBackground = useHeaderContrast(isFloating, headerRef);
     const lightContent = overDarkBackground;
@@ -139,16 +156,18 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileHeaderHidden, setMobileHeaderHidden] = useState(false);
     const effectiveUser = user ?? (isLoading ? getCachedAuthUser() : null);
+
+    const publicNavItems = publicNavHrefs.map(({ href }) => hrefToNavItem(href, t));
+    const authenticatedNavItems = authenticatedNavHrefs.map(({ href }) => hrefToNavItem(href, t));
+    const extraItems = items ?? publicNavItems;
+
     const setupNavItems = needsFullOnboarding
         ? authenticatedNavItems.filter((item) => item.href === "/go-time")
         : authenticatedNavItems;
     const adminNavItems: HeaderNavItem[] = isAdmin
-        ? [
-              { label: "Data", href: "/data" },
-              { label: "Admin", href: "/admin" },
-          ]
+        ? [hrefToNavItem("/data", t), hrefToNavItem("/admin", t)]
         : [];
-    const navItems = effectiveUser ? [...setupNavItems, ...adminNavItems, ...items] : items;
+    const navItems = effectiveUser ? [...setupNavItems, ...adminNavItems, ...extraItems] : extraItems;
     const mobileAppNavItems = setupNavItems
         .concat(adminNavItems)
         .filter((item): item is HeaderNavItem & { href: string } => Boolean(item.href))
@@ -217,10 +236,10 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
                         <nav className="max-md:hidden">
                             <ul className="flex items-center gap-0.5">
                                 {navItems.map((navItem) => (
-                                    <li key={navItem.label}>
+                                    <li key={navItem.href ?? navItem.label}>
                                         {navItem.menu ? (
                                             <AriaDialogTrigger>
-                                                <AriaButton className={cx("flex cursor-pointer items-center gap-0.5 rounded-lg px-1.5 py-1 text-md font-semibold outline-focus-ring transition duration-100 ease-linear focus-visible:outline-2 focus-visible:outline-offset-2", lightContent ? "text-white hover:text-white/80" : "text-secondary hover:text-secondary_hover")}>
+                                                <AriaButton className={cx("flex cursor-pointer items-center gap-0.5 whitespace-nowrap rounded-lg px-1.5 py-1 text-md font-semibold outline-focus-ring transition duration-100 ease-linear focus-visible:outline-2 focus-visible:outline-offset-2", lightContent ? "text-white hover:text-white/80" : "text-secondary hover:text-secondary_hover")}>
                                                     <span className="px-0.5">{navItem.label}</span>
 
                                                     <ChevronDown className={cx("size-4 rotate-0 stroke-[2.625px] transition duration-100 ease-linear in-aria-expanded:-rotate-180", lightContent ? "text-white/80" : "text-fg-quaternary")} />
@@ -260,7 +279,7 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
                                                 to={navItem.href ?? "/"}
                                                 className={({ isActive }) =>
                                                     cx(
-                                                        "flex cursor-pointer items-center gap-0.5 rounded-lg px-1.5 py-1 text-md font-semibold outline-focus-ring transition duration-100 ease-linear focus:outline-offset-2 focus-visible:outline-2",
+                                                        "flex cursor-pointer items-center gap-0.5 whitespace-nowrap rounded-lg px-1.5 py-1 text-md font-semibold outline-focus-ring transition duration-100 ease-linear focus:outline-offset-2 focus-visible:outline-2",
                                                         lightContent ? "hover:text-white/80" : "hover:text-secondary_hover",
                                                         isActive ? "text-brand-600 dark:text-brand-400" : lightContent ? lightTextClass : darkTextClass
                                                     )
@@ -276,14 +295,15 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
                     </div>
 
                     <div className="hidden items-center gap-2 md:flex">
-                        <ThemeSwitcher size={isFloating ? "sm" : "md"} />
+                        <LanguageSwitcher compact lightIcon={lightContent} size={isFloating ? "sm" : "md"} />
+                        <ThemeSwitcher lightIcon={lightContent} size={isFloating ? "sm" : "md"} />
                         {isLoading && !effectiveUser ? (
                             <div className="size-10" aria-hidden="true" />
                         ) : effectiveUser ? (
                             <HeaderProfileMenu size={isFloating ? "sm" : "md"} />
                         ) : (
                             <Button color="secondary" size={isFloating ? "md" : "lg"} href="/login">
-                                Log in
+                                {t("common.nav.logIn")}
                             </Button>
                         )}
                     </div>

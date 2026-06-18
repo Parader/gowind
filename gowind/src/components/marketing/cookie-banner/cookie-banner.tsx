@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Button } from "@/components/base/buttons/button";
 import { Toggle } from "@/components/base/toggle/toggle";
 import type { CookieConsentRecord } from "@/lib/cookie-consent";
+import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 
 interface CookieBannerProps {
@@ -24,6 +25,7 @@ export const CookieBanner = ({
     onOpenPreferences,
     onClosePreferences,
 }: CookieBannerProps) => {
+    const t = useT();
     const [analyticsEnabled, setAnalyticsEnabled] = useState(consent?.analytics ?? false);
 
     const handleOpenPreferences = () => {
@@ -46,15 +48,12 @@ export const CookieBanner = ({
                     <div className="flex flex-col gap-4">
                         <div>
                             <h2 id="cookie-banner-title" className="text-md font-semibold text-primary sm:text-lg">
-                                Cookie preferences
+                                {t("cookieBanner.title")}
                             </h2>
                             <p id="cookie-banner-description" className="mt-2 text-sm leading-relaxed text-secondary">
-                                We use essential cookies and local storage to keep you signed in, remember your theme, and
-                                run GoWind. With your consent, we may also use analytics cookies to understand how the
-                                service is used and improve it. This notice meets GDPR and Quebec Law 25 (Loi 25)
-                                requirements.{" "}
+                                {t("cookieBanner.description")}{" "}
                                 <Link to="/privacy" className="font-medium text-primary underline underline-offset-2 hover:text-brand-600 dark:hover:text-brand-400">
-                                    Privacy Policy
+                                    {t("cookieBanner.privacyLink")}
                                 </Link>
                             </p>
                         </div>
@@ -63,35 +62,35 @@ export const CookieBanner = ({
                             <div className="space-y-4 rounded-xl border border-secondary bg-secondary_alt px-4 py-4">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-semibold text-primary">Essential</p>
+                                        <p className="text-sm font-semibold text-primary">{t("cookieBanner.essential.title")}</p>
                                         <p className="mt-1 text-sm leading-snug text-secondary">
-                                            Required for sign-in, security, and basic app functionality. Always active.
+                                            {t("cookieBanner.essential.description")}
                                         </p>
                                     </div>
                                     <span className="shrink-0 rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary">
-                                        Always on
+                                        {t("cookieBanner.essential.alwaysOn")}
                                     </span>
                                 </div>
 
                                 <div className="flex items-start justify-between gap-4 border-t border-secondary pt-4">
                                     <div className="min-w-0 flex-1 pr-2">
-                                        <p className="text-sm font-semibold text-primary">Analytics</p>
+                                        <p className="text-sm font-semibold text-primary">{t("cookieBanner.analytics.title")}</p>
                                         <p className="mt-1 text-sm leading-snug text-secondary">
-                                            Helps us measure traffic and improve GoWind. Optional.
+                                            {t("cookieBanner.analytics.description")}
                                         </p>
                                     </div>
                                     <Toggle
                                         size="md"
                                         isSelected={analyticsEnabled}
                                         onChange={setAnalyticsEnabled}
-                                        aria-label="Enable analytics cookies"
+                                        aria-label={t("cookieBanner.analytics.aria")}
                                         className="shrink-0"
                                     />
                                 </div>
 
                                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                                     <Button color="secondary" size="md" className="w-full sm:w-auto" onClick={onClosePreferences}>
-                                        {consent ? "Close" : "Back"}
+                                        {consent ? t("cookieBanner.close") : t("cookieBanner.back")}
                                     </Button>
                                     <Button
                                         color="primary"
@@ -99,7 +98,7 @@ export const CookieBanner = ({
                                         className="w-full sm:w-auto"
                                         onClick={() => onSavePreferences(analyticsEnabled)}
                                     >
-                                        Save preferences
+                                        {t("cookieBanner.savePreferences")}
                                     </Button>
                                 </div>
                             </div>
@@ -115,13 +114,13 @@ export const CookieBanner = ({
                                     className="order-3 w-full justify-center sm:order-1 sm:mr-auto sm:w-auto sm:justify-start"
                                     onClick={handleOpenPreferences}
                                 >
-                                    Manage preferences
+                                    {t("cookieBanner.managePreferences")}
                                 </Button>
                                 <Button color="secondary" size="md" className="order-1 w-full sm:order-2 sm:w-auto" onClick={onRejectNonEssential}>
-                                    Reject non-essential
+                                    {t("cookieBanner.rejectNonEssential")}
                                 </Button>
                                 <Button color="primary" size="md" className="order-2 w-full sm:order-3 sm:w-auto" onClick={onAcceptAll}>
-                                    Accept all
+                                    {t("cookieBanner.acceptAll")}
                                 </Button>
                             </div>
                         )}

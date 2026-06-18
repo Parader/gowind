@@ -5,9 +5,11 @@ import { Button } from "@/components/base/buttons/button";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
 import { useAuth } from "@/providers/auth-provider";
+import { useT } from "@/providers/locale-provider";
 
 export const Login = () => {
     const { login, getGoogleLoginUrl } = useAuth();
+    const t = useT();
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -22,7 +24,7 @@ export const Login = () => {
         try {
             await login(email, password);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Sign in failed");
+            setError(err instanceof Error ? err.message : t("auth.login.signInFailed"));
         } finally {
             setIsLoading(false);
         }
@@ -47,10 +49,10 @@ export const Login = () => {
                     <div className="glass-strong rounded-2xl px-6 py-8 md:px-10 md:py-12">
                         <div className="mb-6 h-px w-12 bg-brand-400" />
                         <h1 className="text-display-sm font-semibold tracking-tight text-primary">
-                            Sign in to GoWind
+                            {t("auth.login.title")}
                         </h1>
                         <p className="mt-2 text-md text-tertiary">
-                            Enter your credentials to access your wind windows.
+                            {t("auth.login.subtitle")}
                         </p>
 
                         <div className="mt-8">
@@ -62,12 +64,12 @@ export const Login = () => {
                                 onClick={handleGoogleLogin}
                                 isDisabled={isLoading}
                             >
-                                Sign in with Google
+                                {t("auth.login.google")}
                             </Button>
 
                             <div className="my-6 flex items-center gap-3">
                                 <div className="flex-1 border-t border-secondary" />
-                                <span className="text-sm text-tertiary dark:text-secondary">or continue with email</span>
+                                <span className="text-sm text-tertiary dark:text-secondary">{t("auth.login.orEmail")}</span>
                                 <div className="flex-1 border-t border-secondary" />
                             </div>
                         </div>
@@ -79,8 +81,8 @@ export const Login = () => {
                             <Input
                                 name="email"
                                 type="email"
-                                label="Email"
-                                placeholder="you@example.com"
+                                label={t("auth.login.emailLabel")}
+                                placeholder={t("auth.login.emailPlaceholder")}
                                 icon={Mail01}
                                 size="md"
                                 isRequired
@@ -89,8 +91,8 @@ export const Login = () => {
                             <Input
                                 name="password"
                                 type="password"
-                                label="Password"
-                                placeholder="Enter your password"
+                                label={t("auth.login.passwordLabel")}
+                                placeholder={t("auth.login.passwordPlaceholder")}
                                 icon={Lock01}
                                 size="md"
                                 isRequired
@@ -100,9 +102,9 @@ export const Login = () => {
                             {error && <p className="text-sm text-error-primary">{error}</p>}
 
                             <div className="flex items-center justify-between">
-                                <Checkbox name="remember" label="Remember me" />
+                                <Checkbox name="remember" label={t("auth.login.rememberMe")} />
                                 <Button color="link-gray" size="sm" href="/forgot-password">
-                                    Forgot password?
+                                    {t("auth.login.forgotPassword")}
                                 </Button>
                             </div>
 
@@ -114,17 +116,17 @@ export const Login = () => {
                                 isLoading={isLoading}
                                 isDisabled={isLoading}
                             >
-                                Sign in
+                                {t("auth.login.submit")}
                             </Button>
                         </form>
 
                         <p className="mt-8 text-center text-sm text-tertiary">
-                            Don't have an account?{" "}
+                            {t("auth.login.noAccount")}{" "}
                             <Link
                                 to="/signup"
                                 className="font-semibold text-secondary underline decoration-transparent underline-offset-2 hover:decoration-current"
                             >
-                                Sign up free
+                                {t("auth.login.signUpFree")}
                             </Link>
                         </p>
                     </div>
@@ -134,7 +136,7 @@ export const Login = () => {
                             to="/"
                             className="text-sm text-quaternary hover:text-tertiary"
                         >
-                            ← Back to home
+                            {t("auth.login.backToHome")}
                         </Link>
                     </p>
                 </div>

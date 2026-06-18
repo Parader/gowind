@@ -1,26 +1,28 @@
 import { Heart } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { useCookieConsent } from "@/providers/cookie-consent-provider";
+import { useT } from "@/providers/locale-provider";
 
 const footerColumns = [
     {
-        title: "Pages",
+        titleKey: "marketing.footer.columns.pages",
         links: [
-            { label: "Home", href: "/" },
-            { label: "About", href: "/about" },
+            { labelKey: "marketing.footer.links.home", href: "/" },
+            { labelKey: "marketing.footer.links.about", href: "/about" },
         ],
     },
     {
-        title: "Legal",
+        titleKey: "marketing.footer.columns.legal",
         links: [
-            { label: "Privacy", href: "/privacy" },
-            { label: "Terms", href: "/terms" },
-            { label: "Cookie settings", action: "cookie-settings" as const },
+            { labelKey: "marketing.footer.links.privacy", href: "/privacy" },
+            { labelKey: "marketing.footer.links.terms", href: "/terms" },
+            { labelKey: "marketing.footer.links.cookieSettings", action: "cookie-settings" as const },
         ],
     },
 ];
 
 export const Footer = () => {
+    const t = useT();
     const currentYear = new Date().getFullYear();
     const { openPreferences } = useCookieConsent();
     const donateUrl =
@@ -33,9 +35,9 @@ export const Footer = () => {
                     <div className="flex max-w-sm flex-col items-start gap-3">
                         <span className="text-lg font-semibold text-primary">GoWind</span>
                         <p className="max-w-xs text-sm text-tertiary">
-                            Know when and where to go. Find your next good wind window.
+                            {t("marketing.footer.tagline")}
                         </p>
-                        <p className="mt-2 text-xs text-quaternary">© {currentYear} GoWind. Free to use.</p>
+                        <p className="mt-2 text-xs text-quaternary">{t("marketing.footer.copyright", { year: currentYear })}</p>
                         {donateUrl ? (
                             <Button
                                 size="sm"
@@ -46,20 +48,20 @@ export const Footer = () => {
                                 iconLeading={Heart}
                                 className="mt-3 rounded-full border border-[#E1707A]/40 bg-[#E1707A] !text-white shadow-xs ring-0 hover:!bg-[#E4767E] hover:!text-white [&_[data-icon]]:!text-white"
                             >
-                                Donate
+                                {t("marketing.footer.donate")}
                             </Button>
                         ) : null}
                     </div>
 
                     <div className="grid grid-cols-2 gap-8 md:gap-12">
                         {footerColumns.map((column) => (
-                            <div key={column.title} className="flex flex-col gap-3">
+                            <div key={column.titleKey} className="flex flex-col gap-3">
                                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-quaternary">
-                                    {column.title}
+                                    {t(column.titleKey)}
                                 </p>
                                 <ul className="flex flex-col gap-2">
                                     {column.links.map((link) => (
-                                        <li key={link.label}>
+                                        <li key={link.labelKey}>
                                             {"action" in link && link.action === "cookie-settings" ? (
                                                 <Button
                                                     color="link-gray"
@@ -67,7 +69,7 @@ export const Footer = () => {
                                                     className="text-sm font-medium"
                                                     onClick={openPreferences}
                                                 >
-                                                    {link.label}
+                                                    {t(link.labelKey)}
                                                 </Button>
                                             ) : (
                                                 <Button
@@ -76,7 +78,7 @@ export const Footer = () => {
                                                     href={"href" in link ? link.href : undefined}
                                                     className="text-sm font-medium"
                                                 >
-                                                    {link.label}
+                                                    {t(link.labelKey)}
                                                 </Button>
                                             )}
                                         </li>
@@ -89,7 +91,7 @@ export const Footer = () => {
 
                 <div className="mt-10 flex flex-col gap-4 border-t border-secondary pt-8 md:flex-row md:items-center md:justify-between md:gap-0">
                     <p className="text-xs text-quaternary">
-                        Weather data from Open-Meteo, WeatherAPI, Meteosource, and Visual Crossing.
+                        {t("marketing.footer.weatherCredit")}
                     </p>
                 </div>
             </div>

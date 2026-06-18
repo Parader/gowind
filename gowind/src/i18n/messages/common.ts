@@ -1,0 +1,113 @@
+export const commonEn = {
+    language: {
+        en: "English",
+        fr: "Français",
+        switchAria: "Language",
+        label: "Language",
+    },
+    theme: {
+        switchToLight: "Switch to light mode",
+        switchToDark: "Switch to dark mode",
+        label: "Theme",
+    },
+    nav: {
+        home: "Home",
+        about: "About",
+        goTime: "Go\u00A0Time",
+        locations: "Locations",
+        preferences: "Preferences",
+        data: "Data",
+        admin: "Admin",
+        logIn: "Log in",
+        logOut: "Log out",
+        signUp: "Sign up",
+        accountSettings: "Account settings",
+    },
+    mobileMenu: {
+        open: "Open navigation menu",
+        close: "Close navigation menu",
+        sections: {
+            app: "App",
+            site: "Site",
+            account: "Account",
+            legal: "Legal",
+        },
+    },
+    legal: {
+        privacy: "Privacy",
+        terms: "Terms",
+    },
+    dates: {
+        today: "Today",
+        tomorrow: "Tomorrow",
+        justNow: "Just now",
+        minutesAgo: "{{count}} min ago",
+        hoursAgo: "{{count}} hr ago",
+    },
+    actions: {
+        goBack: "Go back",
+        cancel: "Cancel",
+        save: "Save",
+        delete: "Delete",
+        refresh: "Refresh",
+        loading: "Loading…",
+        close: "Close",
+    },
+};
+
+export const commonFr = {
+    language: {
+        en: "English",
+        fr: "Français",
+        switchAria: "Langue",
+        label: "Langue",
+    },
+    theme: {
+        switchToLight: "Passer en mode clair",
+        switchToDark: "Passer en mode sombre",
+        label: "Thème",
+    },
+    nav: {
+        home: "Accueil",
+        about: "À propos",
+        goTime: "Go\u00A0Time",
+        locations: "Lieux",
+        preferences: "Préférences",
+        data: "Données",
+        admin: "Admin",
+        logIn: "Connexion",
+        logOut: "Déconnexion",
+        signUp: "Inscription",
+        accountSettings: "Paramètres du compte",
+    },
+    mobileMenu: {
+        open: "Ouvrir le menu de navigation",
+        close: "Fermer le menu de navigation",
+        sections: {
+            app: "Appli",
+            site: "Site",
+            account: "Compte",
+            legal: "Mentions légales",
+        },
+    },
+    legal: {
+        privacy: "Confidentialité",
+        terms: "Conditions",
+    },
+    dates: {
+        today: "Aujourd'hui",
+        tomorrow: "Demain",
+        justNow: "À l'instant",
+        minutesAgo: "Il y a {{count}} min",
+        hoursAgo: "Il y a {{count}} h",
+    },
+    actions: {
+        goBack: "Retour",
+        cancel: "Annuler",
+        save: "Enregistrer",
+        delete: "Supprimer",
+        refresh: "Actualiser",
+        loading: "Chargement…",
+        close: "Fermer",
+    },
+};

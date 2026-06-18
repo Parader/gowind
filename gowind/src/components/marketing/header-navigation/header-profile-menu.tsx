@@ -3,6 +3,7 @@ import { LogOut01, Settings01, User01 } from "@untitledui/icons";
 import { Button as AriaButton, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { useAuth } from "@/providers/auth-provider";
+import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 
 const menuItemClass =
@@ -10,6 +11,7 @@ const menuItemClass =
 
 export const HeaderProfileMenu = ({ size = "sm" }: { size?: "sm" | "md" }) => {
     const { user, isAdmin, logout } = useAuth();
+    const t = useT();
 
     if (!user) return null;
 
@@ -25,7 +27,7 @@ export const HeaderProfileMenu = ({ size = "sm" }: { size?: "sm" | "md" }) => {
     return (
         <AriaDialogTrigger>
             <AriaButton
-                aria-label="Account menu"
+                aria-label={t("common.mobileMenu.sections.account")}
                 className={cx(
                     "flex cursor-pointer items-center justify-center rounded-full outline-focus-ring transition duration-100 ease-linear hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2",
                     size === "sm" && "p-0.5",
@@ -62,7 +64,7 @@ export const HeaderProfileMenu = ({ size = "sm" }: { size?: "sm" | "md" }) => {
                             onClick={() => (document.activeElement as HTMLElement)?.blur?.()}
                         >
                             <Settings01 className="size-5 text-fg-quaternary" />
-                            Account settings
+                            {t("common.nav.accountSettings")}
                         </Link>
                         {isAdmin && (
                             <Link
@@ -70,7 +72,7 @@ export const HeaderProfileMenu = ({ size = "sm" }: { size?: "sm" | "md" }) => {
                                 className={menuItemClass}
                                 onClick={() => (document.activeElement as HTMLElement)?.blur?.()}
                             >
-                                Admin
+                                {t("common.nav.admin")}
                             </Link>
                         )}
                         <button
@@ -79,7 +81,7 @@ export const HeaderProfileMenu = ({ size = "sm" }: { size?: "sm" | "md" }) => {
                             onClick={() => logout()}
                         >
                             <LogOut01 className="size-5 text-fg-quaternary" />
-                            Log out
+                            {t("common.nav.logOut")}
                         </button>
                     </div>
                 </div>

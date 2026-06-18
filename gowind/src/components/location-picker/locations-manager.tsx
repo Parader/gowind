@@ -5,6 +5,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { LocationsMapView } from "@/components/location-picker/locations-map-view";
 import { useSetup } from "@/providers/setup-provider";
+import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 
 export interface LocationsManagerProps {
@@ -14,20 +15,19 @@ export interface LocationsManagerProps {
     className?: string;
 }
 
-const defaultTitle = "Locations";
-const defaultDescription =
-    "Manage your flying sites, hills, lakes, and outdoor check spots.";
-
 /**
  * Shared locations UI: add via modal (predefined + custom map), list with delete, map view.
  * Used by the Locations page and onboarding location step.
  */
 export function LocationsManager({
     headingLevel = "h1",
-    title = defaultTitle,
-    description = defaultDescription,
+    title,
+    description,
     className,
 }: LocationsManagerProps) {
+    const t = useT();
+    const resolvedTitle = title ?? t("locationPicker.manager.title");
+    const resolvedDescription = description ?? t("locationPicker.manager.description");
     const { locations, addLocation, removeLocation } = useSetup();
     const [locationName, setLocationName] = useState("");
     const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -60,9 +60,9 @@ export function LocationsManager({
         <div className={cx("w-full", className)}>
             <div className="mb-6 h-px w-12 bg-brand-400" />
             <HeadingTag className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                {title}
+                {resolvedTitle}
             </HeadingTag>
-            <p className="mt-2 text-md text-tertiary">{description}</p>
+            <p className="mt-2 text-md text-tertiary">{resolvedDescription}</p>
 
             <div className="mt-10 space-y-10">
                 <section>
@@ -71,7 +71,7 @@ export function LocationsManager({
                             <AddLocationModal
                                 trigger={
                                     <Button size="md" color="primary" iconLeading={Plus}>
-                                        Add location
+                                        {t("locationPicker.manager.addLocation")}
                                     </Button>
                                 }
                                 locationName={locationName}
@@ -89,9 +89,7 @@ export function LocationsManager({
                     {locations.length === 0 ? (
                         <div className="mt-6 flex flex-col items-center justify-center rounded-lg border border-secondary bg-white px-6 py-8 dark:bg-primary">
                             <Map01 className="size-12 text-quaternary" strokeWidth={1.5} />
-                            <p className="mt-4 text-tertiary">
-                                No locations yet. Add your first flying site or check spot.
-                            </p>
+                            <p className="mt-4 text-tertiary">{t("locationPicker.manager.empty")}</p>
                             <AddLocationModal
                                 trigger={
                                     <Button
@@ -100,7 +98,7 @@ export function LocationsManager({
                                         className="mt-4"
                                         iconLeading={Plus}
                                     >
-                                        Add location
+                                        {t("locationPicker.manager.addLocation")}
                                     </Button>
                                 }
                                 locationName={locationName}
@@ -127,12 +125,14 @@ export function LocationsManager({
                                         </p>
                                     </div>
                                     <Dropdown.Root>
-                                        <Dropdown.DotsButton aria-label={`Options for ${loc.name}`} />
+                                        <Dropdown.DotsButton
+                                            aria-label={t("locationPicker.manager.optionsFor", { name: loc.name })}
+                                        />
                                         <Dropdown.Popover className="w-min">
                                             <Dropdown.Menu>
                                                 <Dropdown.Item
                                                     icon={Trash01}
-                                                    label="Delete"
+                                                    label={t("common.actions.delete")}
                                                     onAction={() => removeLocation(loc.id)}
                                                 />
                                             </Dropdown.Menu>

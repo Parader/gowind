@@ -1,37 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { HelpCircle, MarkerPin01 } from "@untitledui/icons";
 import {
-    PROVIDER_DISPLAY_NAMES,
     type GoTimeDataMargins,
     type GoTimeWindow,
     type GoTimeWindowSeriesPoint,
 } from "@/api/goTimes";
 import { createGoTimeShare } from "@/api/go-time-shares";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
+import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 
-const SCORE_TOOLTIP_TITLE = "How score is calculated";
+type TFn = (key: string, params?: TranslateParams) => string;
 
-const SCORE_TOOLTIP_DESCRIPTION = (
-    <>
-        <span className="block">
-            Score is the average preference fit (0–100) across every hour in this window: wind, gusts, temperature, and
-            precipitation versus the limits you set.
-        </span>
-        <span className="mt-1.5 block">
-            Forecasts are fused into one blended hour before scoring, so each hour reflects agreement across sources where
-            possible.
-        </span>
-    </>
-);
+const PROVIDER_I18N_KEYS: Record<string, string> = {
+    "open-meteo": "goTime.providers.openMeteo",
+    "met-norway": "goTime.providers.metNorway",
+    meteosource: "goTime.providers.meteosource",
+    openweather: "goTime.providers.openWeather",
+    visualcrossing: "goTime.providers.visualCrossing",
+};
 
-const METRIC = {
-    wind: { stroke: "#0ea5e9", text: "text-sky-600 dark:text-sky-400", label: "Wind" },
-    gust: { stroke: "#f97316", text: "text-orange-600 dark:text-orange-400", label: "Gusts" },
-    temp: { stroke: "#d97706", text: "text-amber-700 dark:text-amber-400", label: "Temp" },
-    precip: { stroke: "#2563eb", text: "text-blue-700 dark:text-blue-400", label: "Precip" },
-    suitability: { stroke: "#10b981", text: "text-emerald-600 dark:text-emerald-400", label: "Score" },
-    reliability: { stroke: "#64748b", text: "text-slate-600 dark:text-slate-400", label: "Reliability" },
+function providerDisplayName(pid: string, t: TFn): string {
+    const key = PROVIDER_I18N_KEYS[pid];
+    return key ? t(key) : pid;
+}
+
+const METRIC_STYLE = {
+    wind: { stroke: "#0ea5e9", text: "text-sky-600 dark:text-sky-400" },
+    gust: { stroke: "#f97316", text: "text-orange-600 dark:text-orange-400" },
+    temp: { stroke: "#d97706", text: "text-amber-700 dark:text-amber-400" },
+    precip: { stroke: "#2563eb", text: "text-blue-700 dark:text-blue-400" },
+    suitability: { stroke: "#10b981", text: "text-emerald-600 dark:text-emerald-400" },
+    reliability: { stroke: "#64748b", text: "text-slate-600 dark:text-slate-400" },
 } as const;
 
 function toLocalDateKey(d: Date): string {
@@ -42,7 +42,7 @@ function toLocalDateKey(d: Date): string {
 }
 
 /** Calendar day for the window start (local), e.g. "Today", "Tomorrow", or "Sat, Apr 5". */
-function formatWindowDayLabel(startIso: string): string {
+function formatWindowDayLabel(startIso: string, t: TFn, dateLocale: string): string {
     const start = new Date(startIso);
     const today = new Date();
     const sk = toLocalDateKey(start);
@@ -50,25 +50,25 @@ function formatWindowDayLabel(startIso: string): string {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tmk = toLocalDateKey(tomorrow);
-    if (sk === tk) return "Today";
-    if (sk === tmk) return "Tomorrow";
-    return new Intl.DateTimeFormat(undefined, {
+    if (sk === tk) return t("common.dates.today");
+    if (sk === tmk) return t("common.dates.tomorrow");
+    return new Intl.DateTimeFormat(dateLocale, {
         weekday: "short",
         month: "short",
         day: "numeric",
     }).format(start);
 }
 
-function formatTimeRange(startIso: string, endIso: string): string {
+function formatTimeRange(startIso: string, endIso: string, dateLocale: string): string {
     const start = new Date(startIso);
     const end = new Date(endIso);
-    const fmt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+    const fmt = new Intl.DateTimeFormat(dateLocale, { hour: "numeric", minute: "2-digit" });
     return `${fmt.format(start)} – ${fmt.format(end)}`;
 }
 
-function formatHourClock(iso: string): string {
+function formatHourClock(iso: string, dateLocale: string): string {
     const d = new Date(iso);
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(dateLocale, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -172,7 +172,6 @@ function trendAngleDegFromSeries(vals: (number | null)[]): number | null {
     const y0 = norm(fl.first);
     const y1 = norm(fl.last);
     const ndy = y1 - y0;
-    // Math.atan2: +y is up; SVG rotate: + is CW — negate so rising values tilt the arrow up.
     return (-Math.atan2(ndy, 1) * 180) / Math.PI;
 }
 
@@ -182,7 +181,8 @@ function metricTrendInWindow(
     key: SeriesKey,
     threshold: number,
     unit: string,
-    enabled: boolean
+    enabled: boolean,
+    t: TFn,
 ): { angleDeg: number; title: string } | null {
     if (!enabled || !series || series.length < 2) return null;
     const vals = series.map((p) => p[key]);
@@ -195,11 +195,11 @@ function metricTrendInWindow(
     const b = Math.round(fl.last * 10) / 10;
     let title: string;
     if (Math.abs(d) <= threshold) {
-        title = `In this window: ${a} ${unit} at start \u2192 ${b} ${unit} at end (steady)`;
+        title = t("goTime.windowCard.trend.steady", { start: a, end: b, unit });
     } else if (d > threshold) {
-        title = `In this window: rising from ${a} to ${b} ${unit} (first hour \u2192 last hour)`;
+        title = t("goTime.windowCard.trend.rising", { start: a, end: b, unit });
     } else {
-        title = `In this window: falling from ${a} to ${b} ${unit} (first hour \u2192 last hour)`;
+        title = t("goTime.windowCard.trend.falling", { start: a, end: b, unit });
     }
     return { angleDeg, title };
 }
@@ -229,7 +229,6 @@ interface SparkSeriesRow {
     d: string;
     label: string;
     rangeText: string;
-    /** First hour → last hour in window (same units as values). */
     startEndText: string;
 }
 
@@ -246,10 +245,11 @@ function defaultVisibleSeries(rows: SparkSeriesRow[]): Set<SparkSeriesKey> {
 function GoTimeSparkline({
     series,
     resetKey,
+    t,
 }: {
     series: GoTimeWindowSeriesPoint[];
-    /** When this changes (e.g. new window), visibility resets to wind + gust only. */
     resetKey: string;
+    t: TFn;
 }) {
     const [visibleOverride, setVisibleOverride] = useState<Set<SparkSeriesKey> | null>(null);
     const [focusKey, setFocusKey] = useState<SparkSeriesKey | null>(null);
@@ -269,19 +269,20 @@ function GoTimeSparkline({
 
         const addRow = (
             key: SparkSeriesKey,
-            metric: { stroke: string; label: string },
+            style: { stroke: string },
+            label: string,
             vals: (number | null)[],
             rangeFmt: (min: number, max: number) => string,
-            endpointsFmt: (first: number, last: number) => string
+            endpointsFmt: (first: number, last: number) => string,
         ) => {
             const mm = minMaxPair(vals);
             if (!mm) return;
             const fl = firstLastInWindow(vals);
             built.push({
                 key,
-                stroke: metric.stroke,
+                stroke: style.stroke,
                 d: polylinePoints(normMinMax(vals), W, H),
-                label: metric.label,
+                label,
                 rangeText: rangeFmt(mm.min, mm.max),
                 startEndText: fl ? endpointsFmt(fl.first, fl.last) : "",
             });
@@ -290,56 +291,94 @@ function GoTimeSparkline({
         if (winds.some((v) => v != null)) {
             addRow(
                 "wind",
-                METRIC.wind,
+                METRIC_STYLE.wind,
+                t("goTime.windowCard.metrics.wind"),
                 winds,
-                (a, b) => `${Math.round(a)}–${Math.round(b)} km/h`,
-                (a, b) => `Start ${Math.round(a)} km/h → end ${Math.round(b)} km/h`
+                (a, b) => t("goTime.windowCard.charts.rangeWind", { min: Math.round(a), max: Math.round(b) }),
+                (a, b) =>
+                    t("goTime.windowCard.charts.startEndWind", {
+                        start: Math.round(a),
+                        end: Math.round(b),
+                    }),
             );
         }
         if (gusts.some((v) => v != null)) {
             addRow(
                 "gust",
-                METRIC.gust,
+                METRIC_STYLE.gust,
+                t("goTime.windowCard.metrics.gusts"),
                 gusts,
-                (a, b) => `${Math.round(a)}–${Math.round(b)} km/h`,
-                (a, b) => `Start ${Math.round(a)} km/h → end ${Math.round(b)} km/h`
+                (a, b) => t("goTime.windowCard.charts.rangeWind", { min: Math.round(a), max: Math.round(b) }),
+                (a, b) =>
+                    t("goTime.windowCard.charts.startEndWind", {
+                        start: Math.round(a),
+                        end: Math.round(b),
+                    }),
             );
         }
         if (temps.some((v) => v != null)) {
             addRow(
                 "temp",
-                METRIC.temp,
+                METRIC_STYLE.temp,
+                t("goTime.windowCard.metrics.temp"),
                 temps,
-                (a, b) => `${Math.round(a)}–${Math.round(b)} °C`,
-                (a, b) => `Start ${Math.round(a)} °C → end ${Math.round(b)} °C`
+                (a, b) => t("goTime.windowCard.charts.rangeTemp", { min: Math.round(a), max: Math.round(b) }),
+                (a, b) =>
+                    t("goTime.windowCard.charts.startEndTemp", {
+                        start: Math.round(a),
+                        end: Math.round(b),
+                    }),
             );
         }
         if (precips.some((v) => v != null)) {
             addRow(
                 "precip",
-                METRIC.precip,
+                METRIC_STYLE.precip,
+                t("goTime.windowCard.metrics.precip"),
                 precips,
-                (a, b) => `${Math.round(a)}–${Math.round(b)} %`,
-                (a, b) => `Start ${Math.round(a)}% → end ${Math.round(b)}%`
+                (a, b) => t("goTime.windowCard.charts.rangePrecip", { min: Math.round(a), max: Math.round(b) }),
+                (a, b) =>
+                    t("goTime.windowCard.charts.startEndPrecip", {
+                        start: Math.round(a),
+                        end: Math.round(b),
+                    }),
             );
         }
         addRow(
             "suitability",
-            METRIC.suitability,
+            METRIC_STYLE.suitability,
+            t("goTime.windowCard.metrics.score"),
             suits,
-            (a, b) => `${Math.round(a * 100)}–${Math.round(b * 100)}%`,
-            (a, b) => `Start ${Math.round(a * 100)}% → end ${Math.round(b * 100)}%`
+            (a, b) =>
+                t("goTime.windowCard.charts.rangeScore", {
+                    min: Math.round(a * 100),
+                    max: Math.round(b * 100),
+                }),
+            (a, b) =>
+                t("goTime.windowCard.charts.startEndScore", {
+                    start: Math.round(a * 100),
+                    end: Math.round(b * 100),
+                }),
         );
         addRow(
             "reliability",
-            METRIC.reliability,
+            METRIC_STYLE.reliability,
+            t("goTime.windowCard.metrics.reliability"),
             rels,
-            (a, b) => `${Math.round(a * 100)}–${Math.round(b * 100)}%`,
-            (a, b) => `Start ${Math.round(a * 100)}% → end ${Math.round(b * 100)}%`
+            (a, b) =>
+                t("goTime.windowCard.charts.rangeScore", {
+                    min: Math.round(a * 100),
+                    max: Math.round(b * 100),
+                }),
+            (a, b) =>
+                t("goTime.windowCard.charts.startEndScore", {
+                    start: Math.round(a * 100),
+                    end: Math.round(b * 100),
+                }),
         );
 
         return built;
-    }, [series]);
+    }, [series, t]);
 
     useEffect(() => {
         setVisibleOverride(null);
@@ -365,7 +404,6 @@ function GoTimeSparkline({
     };
 
     const visibleRows = rows.filter((r) => visible.has(r.key));
-    /** When several lines are on, prefer wind → gust for the start/end summary unless user focused a series. */
     const focusEffective =
         focusKey && visible.has(focusKey)
             ? focusKey
@@ -376,7 +414,6 @@ function GoTimeSparkline({
                 visibleRows[0]?.key ??
                 null;
 
-    /** Draw focused series so it stacks above the others. */
     const drawOrder =
         focusEffective != null
             ? [
@@ -391,7 +428,7 @@ function GoTimeSparkline({
     return (
         <div className="mt-3 border-t border-secondary pt-3">
             <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-tertiary">
-                Trends (this window)
+                {t("goTime.windowCard.charts.trendsTitle")}
             </p>
             <div className="rounded-md bg-secondary_alt/40 px-1 py-1 dark:bg-secondary_alt/25">
                 <svg
@@ -399,7 +436,7 @@ function GoTimeSparkline({
                     className="block h-14 w-full"
                     preserveAspectRatio="none"
                     role="img"
-                    aria-label="Trend lines for this window"
+                    aria-label={t("goTime.windowCard.charts.trendsAria")}
                 >
                     {drawOrder.map((r) => (
                         <path
@@ -418,7 +455,7 @@ function GoTimeSparkline({
             {detailRow?.startEndText ? (
                 <p className="mt-2 rounded-md border border-secondary/60 bg-secondary_alt/30 px-2 py-1.5 text-[10px] leading-snug text-secondary dark:bg-secondary_alt/20">
                     <span className="font-semibold text-primary">{detailRow.label}</span>
-                    <span className="text-tertiary"> — first vs last hour in window: </span>
+                    <span className="text-tertiary">{t("goTime.windowCard.charts.firstVsLast")}</span>
                     <span className="tabular-nums text-primary">{detailRow.startEndText}</span>
                 </p>
             ) : null}
@@ -433,10 +470,10 @@ function GoTimeSparkline({
                             className={cx(
                                 "inline-flex max-w-full cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 text-left transition",
                                 on && "bg-secondary_alt ring-1 ring-brand-400/60 dark:ring-brand-500/50",
-                                !on && "opacity-45 hover:bg-secondary_alt/50 hover:opacity-90"
+                                !on && "opacity-45 hover:bg-secondary_alt/50 hover:opacity-90",
                             )}
                             aria-pressed={on}
-                            title={on ? "Click to hide this series" : "Show this series"}
+                            title={on ? t("goTime.windowCard.charts.hideSeries") : t("goTime.windowCard.charts.showSeries")}
                         >
                             <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: r.stroke }} />
                             <span className={cx("font-medium", on ? "text-secondary" : "text-tertiary")}>{r.label}</span>
@@ -450,7 +487,7 @@ function GoTimeSparkline({
 }
 
 /** Short note when raw model spread is wide vs fused headline (no provider names). */
-function marginAnnotations(m: GoTimeDataMargins | undefined): {
+function marginAnnotations(m: GoTimeDataMargins | undefined, t: TFn): {
     wind: string | null;
     gust: string | null;
     temp: string | null;
@@ -463,46 +500,64 @@ function marginAnnotations(m: GoTimeDataMargins | undefined): {
     const windSpread = m.wind.sourceMax - m.wind.sourceMin;
     const wind =
         windSpread >= 3
-            ? `Across models ${r(m.wind.sourceMin)}–${r(m.wind.sourceMax)} km/h`
+            ? t("goTime.windowCard.metrics.acrossModels", {
+                  min: r(m.wind.sourceMin),
+                  max: r(m.wind.sourceMax),
+              })
             : null;
     const gust =
         m.gust != null && m.gust.sourceMax - m.gust.sourceMin >= 3
-            ? `Across models ${r(m.gust.sourceMin)}–${r(m.gust.sourceMax)} km/h`
+            ? t("goTime.windowCard.metrics.acrossModels", {
+                  min: r(m.gust.sourceMin),
+                  max: r(m.gust.sourceMax),
+              })
             : null;
     const tSpread = m.tempC.sourceMax - m.tempC.sourceMin;
     const temp =
         tSpread >= 1.5
-            ? `Across models ${r(m.tempC.sourceMin)}–${r(m.tempC.sourceMax)} °C`
+            ? t("goTime.windowCard.metrics.acrossModelsTemp", {
+                  min: r(m.tempC.sourceMin),
+                  max: r(m.tempC.sourceMax),
+              })
             : null;
     const pSpread = m.precipPct ? m.precipPct.sourceMax - m.precipPct.sourceMin : 0;
     const precip =
         m.precipPct != null && pSpread >= 15
-            ? `Across models ${r(m.precipPct.sourceMin)}–${r(m.precipPct.sourceMax)}%`
+            ? t("goTime.windowCard.metrics.acrossModelsPrecip", {
+                  min: r(m.precipPct.sourceMin),
+                  max: r(m.precipPct.sourceMax),
+              })
             : null;
     return { wind, gust, temp, precip };
 }
 
-function categoryLabel(cat: GoTimeWindow["category"]): string {
-    if (cat === "GOOD") return "Good";
-    if (cat === "MARGINAL") return "Marginal";
-    return "Not ideal";
+function categoryLabel(cat: GoTimeWindow["category"], t: TFn): string {
+    if (cat === "GOOD") return t("goTime.windowCard.categories.good");
+    if (cat === "MARGINAL") return t("goTime.windowCard.categories.marginal");
+    return t("goTime.windowCard.categories.notIdeal");
+}
+
+function hourlyCategoryLabel(cat: GoTimeWindow["category"], t: TFn): string {
+    if (cat === "GOOD") return t("goTime.windowCard.categories.good");
+    if (cat === "MARGINAL") return t("goTime.windowCard.categories.marginal");
+    return t("goTime.windowCard.categories.noGo");
 }
 
 /** Reliability text for the collapsible details block (excludes disagreement-only lines shown under stats). */
 function reliabilityExplanationForDetails(ex: string | undefined): string | null {
-    const t = ex?.trim();
-    if (!t) return null;
-    if (/disagreement/i.test(t)) return null;
-    return t;
+    const trimmed = ex?.trim();
+    if (!trimmed) return null;
+    if (/disagreement/i.test(trimmed)) return null;
+    return trimmed;
 }
 
 /** Footer line when sources disagree (shown below stats + altitude winds). */
-function disagreementFooterText(w: GoTimeWindow): string | null {
+function disagreementFooterText(w: GoTimeWindow, t: TFn): string | null {
     const ex = w.reliabilityExplanation?.trim();
     const fromApi = ex && /disagreement/i.test(ex) ? ex : null;
     if (fromApi) return fromApi;
     if (w.dataMargins?.hasSpread || (w.reliabilityScore != null && w.reliabilityScore < 0.52)) {
-        return "Some disagreement between sources";
+        return t("goTime.windowCard.disagreement");
     }
     return null;
 }
@@ -513,7 +568,7 @@ function disagreementFooterText(w: GoTimeWindow): string | null {
  * says “worsening” but **both** wind and gust ease through the window, we headline the physical trend
  * instead — avoids calling “worsening” when the chart clearly shows wind and gusts settling down.
  */
-function chartsTrendMessage(w: GoTimeWindow): string | null {
+function chartsTrendMessage(w: GoTimeWindow, t: TFn): string | null {
     const series = w.windowSeries;
     if (!series || series.length < 2) return null;
 
@@ -524,33 +579,31 @@ function chartsTrendMessage(w: GoTimeWindow): string | null {
     const flw = firstLastInWindow(winds);
     const flg = firstLastInWindow(gusts);
 
-    /** First→last drop large enough to treat as easing (km/h). */
     const EASE = 1;
 
     const windEases = flw != null && flw.last < flw.first - EASE;
-    const gustEases =
-        !w.hasGusts || flg == null ? true : flg.last < flg.first - EASE;
+    const gustEases = !w.hasGusts || flg == null ? true : flg.last < flg.first - EASE;
 
     if (flS) {
         const d = flS.last - flS.first;
         if (d < -0.05 && windEases && gustEases) {
-            return "Wind and gusts easing through the window";
+            return t("goTime.windowCard.trend.windEasing");
         }
-        if (d > 0.05) return "Conditions improving through the window";
-        if (d < -0.05) return "Conditions worsening through the window";
-        return "Conditions steady through the window";
+        if (d > 0.05) return t("goTime.windowCard.trend.improving");
+        if (d < -0.05) return t("goTime.windowCard.trend.worsening");
+        return t("goTime.windowCard.trend.steadyConditions");
     }
 
     const parts: string[] = [];
     if (flw) {
         const dw = flw.last - flw.first;
-        if (dw > 2) parts.push("Wind picking up through the window");
-        else if (dw < -2) parts.push("Wind easing through the window");
+        if (dw > 2) parts.push(t("goTime.windowCard.trend.windPickingUp"));
+        else if (dw < -2) parts.push(t("goTime.windowCard.trend.windEasingShort"));
     }
     if (flg) {
         const dg = flg.last - flg.first;
-        if (dg > 3) parts.push("Gusts rising through the window");
-        else if (dg < -3) parts.push("Gusts easing through the window");
+        if (dg > 3) parts.push(t("goTime.windowCard.trend.gustsRising"));
+        else if (dg < -3) parts.push(t("goTime.windowCard.trend.gustsEasing"));
     }
 
     if (parts.length > 0) return parts.slice(0, 2).join(" · ");
@@ -558,33 +611,34 @@ function chartsTrendMessage(w: GoTimeWindow): string | null {
 }
 
 /** Model-by-model tables (used inside the Details disclosure). */
-function GoTimeCardModelBreakdown({ w }: { w: GoTimeWindow }) {
-    const showModel =
-        (w.byProvider?.length ?? 0) > 0 || (w.hourlyBySource?.length ?? 0) > 0;
+function GoTimeCardModelBreakdown({ w, t, dateLocale }: { w: GoTimeWindow; t: TFn; dateLocale: string }) {
+    const showModel = (w.byProvider?.length ?? 0) > 0 || (w.hourlyBySource?.length ?? 0) > 0;
     if (!showModel) return null;
 
     return (
         <div className="space-y-4 text-xs">
             {w.byProvider && w.byProvider.length > 0 && (
                 <div className="overflow-x-auto">
-                    <p className="mb-1.5 font-semibold text-secondary">Summary by source (this window)</p>
+                    <p className="mb-1.5 font-semibold text-secondary">
+                        {t("goTime.windowCard.details.summaryBySource")}
+                    </p>
                     <table className="w-full min-w-[520px] border-collapse text-left text-tertiary">
                         <thead>
                             <tr className="border-b border-secondary text-secondary">
-                                <th className="py-1 pr-2 font-medium">Source</th>
-                                <th className="py-1 pr-2 font-medium">Hours</th>
-                                <th className="py-1 pr-2 font-medium">Wind km/h</th>
-                                <th className="py-1 pr-2 font-medium">Gust km/h</th>
-                                <th className="py-1 pr-2 font-medium">Temp °C</th>
-                                <th className="py-1 pr-2 font-medium">Precip %</th>
-                                <th className="py-1 font-medium">Avg score</th>
+                                <th className="py-1 pr-2 font-medium">{t("goTime.windowCard.details.table.source")}</th>
+                                <th className="py-1 pr-2 font-medium">{t("goTime.windowCard.details.table.hours")}</th>
+                                <th className="py-1 pr-2 font-medium">{t("goTime.windowCard.details.table.windKmh")}</th>
+                                <th className="py-1 pr-2 font-medium">{t("goTime.windowCard.details.table.gustKmh")}</th>
+                                <th className="py-1 pr-2 font-medium">{t("goTime.windowCard.details.table.tempC")}</th>
+                                <th className="py-1 pr-2 font-medium">{t("goTime.windowCard.details.table.precipPct")}</th>
+                                <th className="py-1 font-medium">{t("goTime.windowCard.details.table.avgScore")}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {w.byProvider.map((p) => (
                                 <tr key={p.providerId} className="border-b border-secondary/40">
                                     <td className="py-1.5 pr-2 text-primary">
-                                        {PROVIDER_DISPLAY_NAMES[p.providerId] ?? p.providerId}
+                                        {providerDisplayName(p.providerId, t)}
                                     </td>
                                     <td className="py-1.5 pr-2">{p.hourCount}</td>
                                     <td className="py-1.5 pr-2">
@@ -612,27 +666,45 @@ function GoTimeCardModelBreakdown({ w }: { w: GoTimeWindow }) {
             )}
             {w.hourlyBySource && w.hourlyBySource.length > 0 && (
                 <div className="overflow-x-auto">
-                    <p className="mb-1.5 font-semibold text-secondary">Each hour by source</p>
+                    <p className="mb-1.5 font-semibold text-secondary">
+                        {t("goTime.windowCard.details.eachHourBySource")}
+                    </p>
                     <div className="space-y-3">
                         {w.hourlyBySource.map((row) => (
                             <div key={row.time}>
-                                <p className="mb-1 font-medium text-primary">{formatHourClock(row.time)}</p>
+                                <p className="mb-1 font-medium text-primary">{formatHourClock(row.time, dateLocale)}</p>
                                 {row.outlierHints && row.outlierHints.length > 0 && (
                                     <p className="mb-2 text-xs leading-snug text-amber-800 dark:text-amber-200/95">
-                                        <span className="font-semibold">Away from blend:</span>{" "}
+                                        <span className="font-semibold">
+                                            {t("goTime.windowCard.details.awayFromBlend")}
+                                        </span>{" "}
                                         {row.outlierHints.join(" · ")}
                                     </p>
                                 )}
                                 <table className="w-full min-w-[480px] border-collapse text-left text-tertiary">
                                     <thead>
                                         <tr className="border-b border-secondary text-secondary">
-                                            <th className="py-1 pr-2 font-medium">Source</th>
-                                            <th className="py-1 pr-2 font-medium">Wind</th>
-                                            <th className="py-1 pr-2 font-medium">Gust</th>
-                                            <th className="py-1 pr-2 font-medium">Temp</th>
-                                            <th className="py-1 pr-2 font-medium">Precip</th>
-                                            <th className="py-1 pr-2 font-medium">Cat</th>
-                                            <th className="py-1 font-medium">Score</th>
+                                            <th className="py-1 pr-2 font-medium">
+                                                {t("goTime.windowCard.details.table.source")}
+                                            </th>
+                                            <th className="py-1 pr-2 font-medium">
+                                                {t("goTime.windowCard.details.table.wind")}
+                                            </th>
+                                            <th className="py-1 pr-2 font-medium">
+                                                {t("goTime.windowCard.details.table.gust")}
+                                            </th>
+                                            <th className="py-1 pr-2 font-medium">
+                                                {t("goTime.windowCard.details.table.temp")}
+                                            </th>
+                                            <th className="py-1 pr-2 font-medium">
+                                                {t("goTime.windowCard.details.table.precip")}
+                                            </th>
+                                            <th className="py-1 pr-2 font-medium">
+                                                {t("goTime.windowCard.details.table.cat")}
+                                            </th>
+                                            <th className="py-1 font-medium">
+                                                {t("goTime.windowCard.details.table.score")}
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -642,7 +714,7 @@ function GoTimeCardModelBreakdown({ w }: { w: GoTimeWindow }) {
                                                 className="border-b border-secondary/40"
                                             >
                                                 <td className="py-1 pr-2 text-primary">
-                                                    {PROVIDER_DISPLAY_NAMES[pr.providerId] ?? pr.providerId}
+                                                    {providerDisplayName(pr.providerId, t)}
                                                 </td>
                                                 <td className="py-1 pr-2">{pr.windKmh}</td>
                                                 <td className="py-1 pr-2">{pr.gustKmh ?? "—"}</td>
@@ -658,11 +730,7 @@ function GoTimeCardModelBreakdown({ w }: { w: GoTimeWindow }) {
                                                             pr.category === "NO_GO" && "text-quaternary",
                                                         )}
                                                     >
-                                                        {pr.category === "GOOD"
-                                                            ? "Good"
-                                                            : pr.category === "MARGINAL"
-                                                              ? "Marginal"
-                                                              : "No-go"}
+                                                        {hourlyCategoryLabel(pr.category, t)}
                                                     </span>
                                                 </td>
                                                 <td className="py-1.5">{pr.score}</td>
@@ -682,13 +750,17 @@ function GoTimeCardModelBreakdown({ w }: { w: GoTimeWindow }) {
 function GoTimeCardDetailsPanelContent({
     w,
     reliabilityDetails,
+    t,
+    dateLocale,
 }: {
     w: GoTimeWindow;
     reliabilityDetails: string | null;
+    t: TFn;
+    dateLocale: string;
 }) {
     return (
         <>
-            <GoTimeCardModelBreakdown w={w} />
+            <GoTimeCardModelBreakdown w={w} t={t} dateLocale={dateLocale} />
             {reliabilityDetails ? (
                 <p className="text-xs leading-snug text-tertiary">{reliabilityDetails}</p>
             ) : null}
@@ -703,20 +775,17 @@ function GoTimeCardDetailsPanelContent({
     );
 }
 
-function GoTimeCardWindyLink({ windyHref }: { windyHref: string }) {
+function GoTimeCardWindyLink({ windyHref, t }: { windyHref: string; t: TFn }) {
     return (
         <a
             href={windyHref}
             target="_blank"
             rel="noopener noreferrer"
-            title="Opens Windy at your saved spot with a pin; forecast time matches this window start (UTC step)."
+            title={t("goTime.windowCard.windy.title")}
             className="inline-flex max-w-full shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium text-brand-600 underline-offset-2 hover:underline sm:text-sm dark:text-brand-400"
         >
             <MarkerPin01 className="size-4 shrink-0" aria-hidden />
-            <span>
-                Inspect on{"\u00A0"}
-                Windy.com
-            </span>
+            <span>{t("goTime.windowCard.windy.link")}</span>
         </a>
     );
 }
@@ -738,9 +807,9 @@ function TrendArrowSvg({ angleDeg }: { angleDeg: number }) {
     );
 }
 
-function TrendArrowButton({ trend }: { trend: { angleDeg: number; title: string } }) {
+function TrendArrowButton({ trend, t }: { trend: { angleDeg: number; title: string }; t: TFn }) {
     return (
-        <Tooltip title="Trend in this window" description={trend.title} placement="top">
+        <Tooltip title={t("goTime.windowCard.trend.tooltipTitle")} description={trend.title} placement="top">
             <TooltipTrigger
                 className="inline-flex shrink-0 cursor-default rounded p-0.5 text-tertiary outline-hidden hover:bg-secondary_alt/60 focus-visible:ring-2 focus-visible:ring-brand"
                 aria-label={trend.title}
@@ -753,12 +822,7 @@ function TrendArrowButton({ trend }: { trend: { angleDeg: number; title: string 
 
 function ShareIcon(props: { className?: string }) {
     return (
-        <svg
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden="true"
-            className={props.className}
-        >
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className={props.className}>
             <path
                 d="M7.5 11.2 12.6 14M12.5 6 7.5 8.8M15 5.8a2.3 2.3 0 1 0-2.3-2.3A2.3 2.3 0 0 0 15 5.8ZM5 12.3A2.3 2.3 0 1 0 2.7 10 2.3 2.3 0 0 0 5 12.3ZM15 17.3a2.3 2.3 0 1 0-2.3-2.3 2.3 2.3 0 0 0 2.3 2.3Z"
                 stroke="currentColor"
@@ -770,11 +834,18 @@ function ShareIcon(props: { className?: string }) {
     );
 }
 
+function ScoreTooltipDescription({ t }: { t: TFn }) {
+    return (
+        <>
+            <span className="block">{t("goTime.windowCard.score.tooltipLine1")}</span>
+            <span className="mt-1.5 block">{t("goTime.windowCard.score.tooltipLine2")}</span>
+        </>
+    );
+}
+
 export function GoTimeWindowCard({
     w,
-    /** When the list already shows location (e.g. grouped by place), hide the location line. */
     showLocation = true,
-    /** When the list already shows the calendar day (e.g. grouped by date), hide the day line. */
     showDay = true,
     allowShare = true,
     compact = false,
@@ -785,7 +856,13 @@ export function GoTimeWindowCard({
     allowShare?: boolean;
     compact?: boolean;
 }) {
+    const t = useT();
+    const { dateLocale } = useLocale();
     const [shareState, setShareState] = useState<"idle" | "sharing" | "shared" | "copied" | "error">("idle");
+
+    const scoreTooltipTitle = t("goTime.windowCard.score.tooltipTitle");
+    const scoreTooltipDescription = <ScoreTooltipDescription t={t} />;
+
     const qualityClass =
         w.category === "GOOD"
             ? "text-emerald-600 dark:text-emerald-400"
@@ -793,14 +870,14 @@ export function GoTimeWindowCard({
               ? "text-amber-600 dark:text-amber-400"
               : "text-red-600 dark:text-red-400";
 
-    const margins = marginAnnotations(w.dataMargins);
+    const margins = marginAnnotations(w.dataMargins, t);
     const locationLine = (w.locationName ?? "").trim();
     const hasLocationOrDay = (showLocation && locationLine.length > 0) || showDay;
 
     const scoreDisplay = Math.round(w.averageScore);
     const reliabilityDetails = reliabilityExplanationForDetails(w.reliabilityExplanation);
-    const disagreementFooter = disagreementFooterText(w);
-    const chartsTrend = chartsTrendMessage(w);
+    const disagreementFooter = disagreementFooterText(w, t);
+    const chartsTrend = chartsTrendMessage(w, t);
     const hasWindByHeight = w.windByHeight && Object.keys(w.windByHeight).length > 0;
 
     const windyUrlParam =
@@ -811,10 +888,10 @@ export function GoTimeWindowCard({
             : null;
 
     const ws = w.windowSeries;
-    const windTrendArrow = metricTrendInWindow(ws, "windKmh", 0.5, "km/h", true);
-    const gustTrendArrow = metricTrendInWindow(ws, "gustKmh", 1, "km/h", w.hasGusts);
-    const tempTrendArrow = metricTrendInWindow(ws, "tempC", 0.5, "°C", true);
-    const precipTrendArrow = metricTrendInWindow(ws, "precipPct", 2, "%", w.hasPrecip);
+    const windTrendArrow = metricTrendInWindow(ws, "windKmh", 0.5, t("goTime.windowCard.metrics.kmh"), true, t);
+    const gustTrendArrow = metricTrendInWindow(ws, "gustKmh", 1, t("goTime.windowCard.metrics.kmh"), w.hasGusts, t);
+    const tempTrendArrow = metricTrendInWindow(ws, "tempC", 0.5, "°C", true, t);
+    const precipTrendArrow = metricTrendInWindow(ws, "precipPct", 2, "%", w.hasPrecip, t);
 
     const hasDetailsPanel =
         Boolean(reliabilityDetails) ||
@@ -824,8 +901,11 @@ export function GoTimeWindowCard({
 
     const buildShareText = () => {
         const where = (w.locationName ?? "").trim();
-        const when = `${formatWindowDayLabel(displayStart(w))} ${formatTimeRange(displayStart(w), displayEnd(w))}`;
-        return `GoWind flying window${where ? ` at ${where}` : ""}: ${when}`;
+        const when = `${formatWindowDayLabel(displayStart(w), t, dateLocale)} ${formatTimeRange(displayStart(w), displayEnd(w), dateLocale)}`;
+        return t("goTime.windowCard.share.text", {
+            atLocation: where ? t("goTime.windowCard.share.atLocation", { location: where }) : "",
+            when,
+        });
     };
 
     const handleShare = async () => {
@@ -840,7 +920,7 @@ export function GoTimeWindowCard({
             const nativeShare = (navigator as { share?: (data: ShareData) => Promise<void> }).share;
             if (typeof nativeShare === "function") {
                 await nativeShare.call(navigator, {
-                    title: "Shared GoWind window",
+                    title: t("goTime.windowCard.share.nativeTitle"),
                     text: buildShareText(),
                     url,
                 });
@@ -863,7 +943,6 @@ export function GoTimeWindowCard({
 
     return (
         <div className="flex w-full flex-col gap-2.5 rounded-xl border border-secondary bg-white px-4 py-3.5 shadow-sm dark:bg-primary">
-            {/* Row 1: location/date + category (left), score (right); row 2: time range */}
             <div className={cx("flex flex-col", hasLocationOrDay ? "gap-1.5" : "gap-1")}>
                 <div
                     className={cx(
@@ -877,46 +956,51 @@ export function GoTimeWindowCard({
                                 <p className="text-sm font-semibold text-secondary">{locationLine}</p>
                             ) : showDay ? (
                                 <p className="text-sm font-semibold text-secondary">
-                                    {formatWindowDayLabel(displayStart(w))}
+                                    {formatWindowDayLabel(displayStart(w), t, dateLocale)}
                                 </p>
                             ) : null}
                             <p className={cx("text-sm font-semibold sm:text-base", qualityClass)}>
-                                {categoryLabel(w.category)}
+                                {categoryLabel(w.category, t)}
                             </p>
                         </div>
                         {showLocation && locationLine && showDay ? (
                             <p className="mt-0.5 text-xs font-medium text-tertiary">
-                                {formatWindowDayLabel(displayStart(w))}
+                                {formatWindowDayLabel(displayStart(w), t, dateLocale)}
                             </p>
                         ) : null}
                     </div>
-                    {/* Single-line score so a short left column (e.g. only “Good”) isn’t followed by a tall empty band before the time row */}
                     <div className="flex shrink-0 items-center gap-1.5">
                         {allowShare ? (
                             <button
                                 type="button"
                                 className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-semibold text-fg-quaternary outline-hidden transition duration-200 hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-wait disabled:opacity-60"
-                                aria-label="Share this go-time window"
+                                aria-label={t("goTime.windowCard.share.aria")}
                                 disabled={shareState === "sharing"}
                                 onClick={handleShare}
                             >
                                 <ShareIcon className="size-4 shrink-0" />
-                                <span>Share</span>
+                                <span>{t("goTime.windowCard.share.button")}</span>
                             </button>
                         ) : null}
                         {shareState === "shared" || shareState === "copied" ? (
                             <span className="text-[10px] font-semibold text-success-primary">
-                                {shareState === "shared" ? "Shared" : "Copied"}
+                                {shareState === "shared"
+                                    ? t("goTime.windowCard.share.shared")
+                                    : t("goTime.windowCard.share.copied")}
                             </span>
                         ) : shareState === "error" ? (
-                            <span className="text-[10px] font-semibold text-error-primary">Failed</span>
+                            <span className="text-[10px] font-semibold text-error-primary">
+                                {t("goTime.windowCard.share.failed")}
+                            </span>
                         ) : null}
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-tertiary">Score</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-tertiary">
+                            {t("goTime.windowCard.metrics.score")}
+                        </span>
                         <span className="text-xl font-bold tabular-nums text-primary sm:text-2xl">{scoreDisplay}</span>
-                        <Tooltip title={SCORE_TOOLTIP_TITLE} description={SCORE_TOOLTIP_DESCRIPTION} placement="left">
+                        <Tooltip title={scoreTooltipTitle} description={scoreTooltipDescription} placement="left">
                             <TooltipTrigger
                                 className="rounded-md p-0.5 text-fg-quaternary outline-hidden transition duration-200 hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:ring-2 focus-visible:ring-brand"
-                                aria-label={SCORE_TOOLTIP_TITLE}
+                                aria-label={scoreTooltipTitle}
                             >
                                 <HelpCircle className="size-4 shrink-0" />
                             </TooltipTrigger>
@@ -924,23 +1008,30 @@ export function GoTimeWindowCard({
                     </div>
                 </div>
                 <p className="text-xl font-bold tabular-nums tracking-tight text-primary sm:text-2xl">
-                    {formatTimeRange(displayStart(w), displayEnd(w))}
+                    {formatTimeRange(displayStart(w), displayEnd(w), dateLocale)}
                 </p>
             </div>
 
-            {/* Main stats */}
             <div className={cx("grid grid-cols-2 gap-3", !compact && "sm:grid-cols-4")}>
                 <div>
-                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC.wind.text)}>
-                        {METRIC.wind.label}
+                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC_STYLE.wind.text)}>
+                        {t("goTime.windowCard.metrics.wind")}
                     </p>
-                    <p className={cx("mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl", METRIC.wind.text)}>
+                    <p
+                        className={cx(
+                            "mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl",
+                            METRIC_STYLE.wind.text,
+                        )}
+                    >
                         <span>
-                            <span className="whitespace-nowrap">{w.minWindKmh}–{w.maxWindKmh}{" "}
-                            <span className="text-xs font-semibold opacity-85">km/h</span>
+                            <span className="whitespace-nowrap">
+                                {w.minWindKmh}–{w.maxWindKmh}{" "}
+                                <span className="text-xs font-semibold opacity-85">
+                                    {t("goTime.windowCard.metrics.kmh")}
+                                </span>
                             </span>
                         </span>
-                        {windTrendArrow ? <TrendArrowButton trend={windTrendArrow} /> : null}
+                        {windTrendArrow ? <TrendArrowButton trend={windTrendArrow} t={t} /> : null}
                     </p>
                     {margins.wind ? (
                         <p className="mt-1 text-[10px] leading-snug text-amber-800/95 dark:text-amber-200/90">
@@ -949,17 +1040,26 @@ export function GoTimeWindowCard({
                     ) : null}
                 </div>
                 <div>
-                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC.gust.text)}>
-                        {METRIC.gust.label}
+                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC_STYLE.gust.text)}>
+                        {t("goTime.windowCard.metrics.gusts")}
                     </p>
-                    <p className={cx("mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl", METRIC.gust.text)}>
+                    <p
+                        className={cx(
+                            "mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl",
+                            METRIC_STYLE.gust.text,
+                        )}
+                    >
                         <span>
                             <span className="whitespace-nowrap">
                                 {w.hasGusts ? `${w.maxGustKmh}` : "—"}{" "}
-                                {w.hasGusts ? <span className="text-xs font-semibold opacity-85">km/h</span> : null}
+                                {w.hasGusts ? (
+                                    <span className="text-xs font-semibold opacity-85">
+                                        {t("goTime.windowCard.metrics.kmh")}
+                                    </span>
+                                ) : null}
                             </span>
                         </span>
-                        {gustTrendArrow ? <TrendArrowButton trend={gustTrendArrow} /> : null}
+                        {gustTrendArrow ? <TrendArrowButton trend={gustTrendArrow} t={t} /> : null}
                     </p>
                     {margins.gust ? (
                         <p className="mt-1 text-[10px] leading-snug text-amber-800/95 dark:text-amber-200/90">
@@ -968,17 +1068,22 @@ export function GoTimeWindowCard({
                     ) : null}
                 </div>
                 <div>
-                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC.temp.text)}>
-                        {METRIC.temp.label}
+                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC_STYLE.temp.text)}>
+                        {t("goTime.windowCard.metrics.temp")}
                     </p>
-                    <p className={cx("mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl", METRIC.temp.text)}>
+                    <p
+                        className={cx(
+                            "mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl",
+                            METRIC_STYLE.temp.text,
+                        )}
+                    >
                         <span>
                             <span className="whitespace-nowrap">
                                 {w.minTempC}–{w.maxTempC}{" "}
                                 <span className="text-xs font-semibold opacity-85">°C</span>
                             </span>
                         </span>
-                        {tempTrendArrow ? <TrendArrowButton trend={tempTrendArrow} /> : null}
+                        {tempTrendArrow ? <TrendArrowButton trend={tempTrendArrow} t={t} /> : null}
                     </p>
                     {margins.temp ? (
                         <p className="mt-1 text-[10px] leading-snug text-amber-800/95 dark:text-amber-200/90">
@@ -987,17 +1092,22 @@ export function GoTimeWindowCard({
                     ) : null}
                 </div>
                 <div>
-                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC.precip.text)}>
-                        {METRIC.precip.label}
+                    <p className={cx("text-[10px] font-semibold uppercase tracking-wide", METRIC_STYLE.precip.text)}>
+                        {t("goTime.windowCard.metrics.precip")}
                     </p>
-                    <p className={cx("mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl", METRIC.precip.text)}>
+                    <p
+                        className={cx(
+                            "mt-0.5 flex flex-row flex-wrap items-baseline gap-1.5 text-lg font-bold tabular-nums sm:text-xl",
+                            METRIC_STYLE.precip.text,
+                        )}
+                    >
                         <span>
                             <span className="whitespace-nowrap">
                                 {w.hasPrecip ? `${w.minPrecipPct}–${w.maxPrecipPct}` : "—"}{" "}
                                 {w.hasPrecip ? <span className="text-xs font-semibold opacity-85">%</span> : null}
                             </span>
                         </span>
-                        {precipTrendArrow ? <TrendArrowButton trend={precipTrendArrow} /> : null}
+                        {precipTrendArrow ? <TrendArrowButton trend={precipTrendArrow} t={t} /> : null}
                     </p>
                     {margins.precip ? (
                         <p className="mt-1 text-[10px] leading-snug text-amber-800/95 dark:text-amber-200/90">
@@ -1018,12 +1128,16 @@ export function GoTimeWindowCard({
                                               key={key}
                                               className="rounded-md bg-secondary_alt px-2 py-0.5 font-medium text-secondary"
                                           >
-                                              {v.label}: {v.minWindKmh}–{v.maxWindKmh} km/h
+                                              {t("goTime.windowCard.metrics.heightWind", {
+                                                  label: v.label,
+                                                  min: v.minWindKmh,
+                                                  max: v.maxWindKmh,
+                                              })}
                                           </span>
                                       ))
                                     : null}
                             </div>
-                            {windyHref ? <GoTimeCardWindyLink windyHref={windyHref} /> : null}
+                            {windyHref ? <GoTimeCardWindyLink windyHref={windyHref} t={t} /> : null}
                         </div>
                     ) : null}
                     {disagreementFooter ? (
@@ -1038,22 +1152,25 @@ export function GoTimeWindowCard({
                 <details className="rounded-lg border border-secondary/70 bg-secondary_alt/25 dark:bg-secondary_alt/15">
                     <summary className="flex cursor-pointer list-none flex-row flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-2 text-xs font-medium text-secondary marker:hidden [&::-webkit-details-marker]:hidden">
                         <span className="text-tertiary">▸</span>
-                        <span>Charts</span>
+                        <span>{t("goTime.windowCard.charts.title")}</span>
                         {chartsTrend ? (
-                            <span className="text-[11px] font-normal leading-snug text-tertiary">
-                                {chartsTrend}
-                            </span>
+                            <span className="text-[11px] font-normal leading-snug text-tertiary">{chartsTrend}</span>
                         ) : null}
                     </summary>
                     <div className="border-t border-secondary/60 px-3 pb-3 pt-2">
-                        <GoTimeSparkline series={w.windowSeries} resetKey={`${w.startTime}-${w.endTime}`} />
+                        <GoTimeSparkline series={w.windowSeries} resetKey={`${w.startTime}-${w.endTime}`} t={t} />
                         {hasDetailsPanel && (
                             <details className="mt-3 rounded-md border border-secondary/60 bg-white dark:bg-primary/25">
                                 <summary className="cursor-pointer list-none px-2.5 py-1.5 text-xs font-medium text-secondary marker:hidden [&::-webkit-details-marker]:hidden">
-                                    <span className="text-tertiary">▸</span> Details
+                                    <span className="text-tertiary">▸</span> {t("goTime.windowCard.details.title")}
                                 </summary>
                                 <div className="space-y-3 border-t border-secondary/50 px-2.5 pb-2.5 pt-2">
-                                    <GoTimeCardDetailsPanelContent w={w} reliabilityDetails={reliabilityDetails} />
+                                    <GoTimeCardDetailsPanelContent
+                                        w={w}
+                                        reliabilityDetails={reliabilityDetails}
+                                        t={t}
+                                        dateLocale={dateLocale}
+                                    />
                                 </div>
                             </details>
                         )}
@@ -1063,10 +1180,15 @@ export function GoTimeWindowCard({
                 hasDetailsPanel && (
                     <details className="rounded-lg border border-secondary/70 bg-secondary_alt/25 dark:bg-secondary_alt/15">
                         <summary className="cursor-pointer list-none px-3 py-2 text-xs font-medium text-secondary marker:hidden [&::-webkit-details-marker]:hidden">
-                            <span className="text-tertiary">▸</span> Details
+                            <span className="text-tertiary">▸</span> {t("goTime.windowCard.details.title")}
                         </summary>
                         <div className="space-y-3 border-t border-secondary/60 px-3 pb-3 pt-2">
-                            <GoTimeCardDetailsPanelContent w={w} reliabilityDetails={reliabilityDetails} />
+                            <GoTimeCardDetailsPanelContent
+                                w={w}
+                                reliabilityDetails={reliabilityDetails}
+                                t={t}
+                                dateLocale={dateLocale}
+                            />
                         </div>
                     </details>
                 )

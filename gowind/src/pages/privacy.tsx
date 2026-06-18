@@ -1,15 +1,20 @@
+import { useLocale } from "@/providers/locale-provider";
+
 export const Privacy = () => {
+    const { t, dateLocale } = useLocale();
+    const lastUpdated = new Date().toLocaleDateString(dateLocale);
+
     return (
         <main className="flex-1">
             <section className="border-b border-secondary bg-primary">
                 <div className="mx-auto max-w-container px-4 py-14 md:px-8 md:py-20">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-secondary">Legal</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-secondary">{t("privacy.eyebrow")}</p>
                     <div className="mt-4 max-w-3xl">
                         <h1 className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                            Privacy Policy
+                            {t("privacy.title")}
                         </h1>
                         <p className="mt-4 text-md text-tertiary">
-                            Last updated: {new Date().toLocaleDateString("en-US")}
+                            {t("privacy.lastUpdated", { date: lastUpdated })}
                         </p>
                     </div>
                 </div>
@@ -18,104 +23,83 @@ export const Privacy = () => {
             <section className="bg-primary">
                 <div className="mx-auto max-w-container px-4 py-14 md:px-8 md:py-20">
                     <div className="mx-auto max-w-3xl space-y-8 text-md text-tertiary">
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">1. Introduction</h2>
-                                <p>
-                                    GoWind ("we", "our", or "us") is committed to protecting your privacy. This Privacy
-                                    Policy explains how we collect, use, disclose, and safeguard your information when
-                                    you use our wind window finder service at gowind.app and related services (the
-                                    "Service").
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.introduction.title")}</h2>
+                            <p>{t("privacy.sections.introduction.body")}</p>
+                        </div>
 
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">2. Information We Collect</h2>
-                                <p className="mb-3">
-                                    We collect information you provide directly to us and information we obtain
-                                    automatically when you use the Service.
-                                </p>
-                                <p className="mb-2 font-medium text-secondary">Information you provide:</p>
-                                <ul className="list-inside list-disc space-y-1 pl-2">
-                                    <li>Account information: email address, name (if you choose to provide it)</li>
-                                    <li>Location data: flying sites and check spots you add to your account</li>
-                                    <li>Preferences: wind limits, temperature range, and other conditions you configure</li>
-                                    <li>Authentication: when you sign up or log in (including via Google)</li>
-                                </ul>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.informationWeCollect.title")}</h2>
+                            <p className="mb-3">{t("privacy.sections.informationWeCollect.intro")}</p>
+                            <p className="mb-2 font-medium text-secondary">{t("privacy.sections.informationWeCollect.youProvide")}</p>
+                            <ul className="list-inside list-disc space-y-1 pl-2">
+                                <li>{t("privacy.sections.informationWeCollect.items.account")}</li>
+                                <li>{t("privacy.sections.informationWeCollect.items.locations")}</li>
+                                <li>{t("privacy.sections.informationWeCollect.items.preferences")}</li>
+                                <li>{t("privacy.sections.informationWeCollect.items.authentication")}</li>
+                            </ul>
+                        </div>
 
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">3. How We Use Your Information</h2>
-                                <p>We use the information we collect to:</p>
-                                <ul className="mt-2 list-inside list-disc space-y-1 pl-2">
-                                    <li>Provide, maintain, and improve the Service</li>
-                                    <li>Fetch and analyze weather forecasts for your saved locations</li>
-                                    <li>Send you service-related notifications (if you opt in)</li>
-                                    <li>Respond to your requests and support inquiries</li>
-                                    <li>Protect against fraud and abuse</li>
-                                </ul>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.howWeUse.title")}</h2>
+                            <p>{t("privacy.sections.howWeUse.intro")}</p>
+                            <ul className="mt-2 list-inside list-disc space-y-1 pl-2">
+                                <li>{t("privacy.sections.howWeUse.items.provide")}</li>
+                                <li>{t("privacy.sections.howWeUse.items.forecasts")}</li>
+                                <li>{t("privacy.sections.howWeUse.items.notifications")}</li>
+                                <li>{t("privacy.sections.howWeUse.items.support")}</li>
+                                <li>{t("privacy.sections.howWeUse.items.fraud")}</li>
+                            </ul>
+                        </div>
 
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">4. Data Sharing</h2>
-                                <p>
-                                    We do not sell your personal information. We may share your data with:
-                                </p>
-                                <ul className="mt-2 list-inside list-disc space-y-1 pl-2">
-                                    <li>Weather data providers (e.g., Open-Meteo) when fetching forecasts for your locations</li>
-                                    <li>Service providers who help us operate the Service (hosting, analytics)</li>
-                                    <li>Legal authorities when required by law</li>
-                                </ul>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.dataSharing.title")}</h2>
+                            <p>{t("privacy.sections.dataSharing.intro")}</p>
+                            <ul className="mt-2 list-inside list-disc space-y-1 pl-2">
+                                <li>{t("privacy.sections.dataSharing.items.weather")}</li>
+                                <li>{t("privacy.sections.dataSharing.items.providers")}</li>
+                                <li>{t("privacy.sections.dataSharing.items.legal")}</li>
+                            </ul>
+                        </div>
 
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">5. Data Retention</h2>
-                                <p>
-                                    We retain your account data and saved locations for as long as your account is
-                                    active. If you delete your account, we will remove your personal data within a
-                                    reasonable period.
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.dataRetention.title")}</h2>
+                            <p>{t("privacy.sections.dataRetention.body")}</p>
+                        </div>
 
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">6. Your Rights</h2>
-                                <p>You may:</p>
-                                <ul className="mt-2 list-inside list-disc space-y-1 pl-2">
-                                    <li>Access, update, or delete your account and data through the app</li>
-                                    <li>Export your data (contact us to request an export)</li>
-                                    <li>Opt out of non-essential communications</li>
-                                    <li>Withdraw cookie consent at any time via Cookie settings in the footer</li>
-                                </ul>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.yourRights.title")}</h2>
+                            <p>{t("privacy.sections.yourRights.intro")}</p>
+                            <ul className="mt-2 list-inside list-disc space-y-1 pl-2">
+                                <li>{t("privacy.sections.yourRights.items.access")}</li>
+                                <li>{t("privacy.sections.yourRights.items.export")}</li>
+                                <li>{t("privacy.sections.yourRights.items.optOut")}</li>
+                                <li>{t("privacy.sections.yourRights.items.cookies")}</li>
+                            </ul>
+                        </div>
 
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">7. Cookies and Similar Technologies</h2>
-                                <p className="mb-3">
-                                    We use cookies and local storage to operate GoWind. Under GDPR and Quebec&apos;s Law 25
-                                    (Loi 25), we ask for your consent before using non-essential cookies.
-                                </p>
-                                <p className="mb-2 font-medium text-secondary">Essential (always active):</p>
-                                <ul className="mb-3 list-inside list-disc space-y-1 pl-2">
-                                    <li>Authentication tokens and session data to keep you signed in</li>
-                                    <li>Theme and interface preferences</li>
-                                    <li>Security and fraud prevention related to your account</li>
-                                </ul>
-                                <p className="mb-2 font-medium text-secondary">Analytics (optional, requires consent):</p>
-                                <ul className="list-inside list-disc space-y-1 pl-2">
-                                    <li>Usage analytics to understand how the Service is used and improve it</li>
-                                </ul>
-                                <p className="mt-3">
-                                    You can accept, reject, or customize these preferences using the cookie banner or
-                                    Cookie settings link in the footer. You may change your choice at any time.
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.cookies.title")}</h2>
+                            <p className="mb-3">{t("privacy.sections.cookies.intro")}</p>
+                            <p className="mb-2 font-medium text-secondary">{t("privacy.sections.cookies.essential")}</p>
+                            <ul className="mb-3 list-inside list-disc space-y-1 pl-2">
+                                <li>{t("privacy.sections.cookies.essentialItems.auth")}</li>
+                                <li>{t("privacy.sections.cookies.essentialItems.theme")}</li>
+                                <li>{t("privacy.sections.cookies.essentialItems.security")}</li>
+                            </ul>
+                            <p className="mb-2 font-medium text-secondary">{t("privacy.sections.cookies.analytics")}</p>
+                            <ul className="list-inside list-disc space-y-1 pl-2">
+                                <li>{t("privacy.sections.cookies.analyticsItems.usage")}</li>
+                            </ul>
+                            <p className="mt-3">
+                                {t("privacy.sections.cookies.manage")}
+                            </p>
+                        </div>
 
-                            <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">8. Contact</h2>
-                                <p>
-                                    For privacy-related questions, contact us at the email or address provided on the
-                                    About page.
-                                </p>
-                            </div>
+                        <div>
+                            <h2 className="mb-3 text-lg font-semibold text-primary">{t("privacy.sections.contact.title")}</h2>
+                            <p>{t("privacy.sections.contact.body")}</p>
+                        </div>
                     </div>
                 </div>
             </section>

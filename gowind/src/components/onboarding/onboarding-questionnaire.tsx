@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { Map01, Sliders01, ArrowRight, ArrowLeft, Check, Activity } from "@untitledui/icons";
 import { CheckboxGroup } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
@@ -16,24 +16,20 @@ import {
     useSetup,
     defaultPreferences,
 } from "@/providers/setup-provider";
-import { SPORTS, SPORT_PRESETS } from "./onboarding-data";
+import { useT } from "@/providers/locale-provider";
+import {
+    SPORTS,
+    SPORT_PRESETS,
+    getTimeOfDayOptions,
+    sportListKey,
+    timeOfDayKey,
+} from "./onboarding-data";
 import { cx } from "@/utils/cx";
 import type { Preferences } from "@/types/setup";
 
-const STEPS = [
-    { id: "welcome", label: "Welcome", icon: Check },
-    { id: "sports", label: "Sports", icon: Activity },
-    { id: "location", label: "Locations", icon: Map01 },
-    { id: "preferences", label: "Preferences", icon: Sliders01 },
-    { id: "review", label: "Review", icon: Check },
-] as const;
+const STEP_IDS = ["welcome", "sports", "location", "preferences", "review"] as const;
 
-const TIME_OF_DAY_OPTIONS = [
-    { id: "morning", label: "Morning", start: 6, end: 12 },
-    { id: "afternoon", label: "Afternoon", start: 12, end: 17 },
-    { id: "evening", label: "Evening", start: 17, end: 24 },
-    { id: "anytime", label: "Anytime", start: 0, end: 24 },
-] as const;
+const STEP_ICONS = [Check, Activity, Map01, Sliders01, Check] as const;
 
 interface OnboardingQuestionnaireProps {
     onComplete?: () => void;
@@ -41,7 +37,20 @@ interface OnboardingQuestionnaireProps {
 
 export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}) => {
     const { onComplete } = props;
+    const t = useT();
     const { setPreferences, locations, preferences } = useSetup();
+
+    const STEPS = useMemo(
+        () =>
+            STEP_IDS.map((id, i) => ({
+                id,
+                label: t(`onboarding.steps.${id === "location" ? "locations" : id}`),
+                icon: STEP_ICONS[i],
+            })),
+        [t],
+    );
+
+    const timeOfDayOptions = useMemo(() => getTimeOfDayOptions(t), [t]);
 
     const initialStep = onComplete ? 0 : locations.length > 0 ? 3 : 0;
     const [stepIndex, setStepIndex] = useState(initialStep);
@@ -50,22 +59,38 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
     const [selectedSports, setSelectedSports] = useState<string[]>(() => preferences?.sports ?? []);
 
     const preferencesFormRef = useRef<PreferencesFormHandle>(null);
+    const skipInitialScrollRef = useRef(true);
+
+    useEffect(() => {
+        if (skipInitialScrollRef.current) {
+            skipInitialScrollRef.current = false;
+            return;
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }, [stepIndex, prefSubIndex]);
 
     const step = STEPS[stepIndex];
     const mergedPrefs = { ...defaultPreferences, ...preferences };
     const sessionTimeBlocks =
         mergedPrefs.preferredTimeBlocks?.filter((b) =>
-            TIME_OF_DAY_OPTIONS.some((o) => o.id === b.id)
+            timeOfDayOptions.some((o) => o.id === b.id)
         ) ?? [];
+    const minSession = mergedPrefs.minSessionLengthMinutes ?? 60;
     const sessionSummary =
         sessionTimeBlocks.length > 0
-            ? `${sessionTimeBlocks
-                  .map(
-                      (b) =>
-                          `${b.label} ${b.start}:00–${b.end === 24 ? "24" : b.end}:00`
-                  )
-                  .join(", ")} · min ${mergedPrefs.minSessionLengthMinutes ?? 60} min`
-            : `None · min ${mergedPrefs.minSessionLengthMinutes ?? 60} min`;
+            ? t("onboarding.review.sessionBlock", {
+                  blocks: sessionTimeBlocks
+                      .map((b) =>
+                          t("onboarding.review.sessionTime", {
+                              label: t(timeOfDayKey(b.id)),
+                              start: b.start,
+                              end: b.end === 24 ? 24 : b.end,
+                          })
+                      )
+                      .join(", "),
+                  minutes: minSession,
+              })
+            : t("onboarding.review.sessionNone", { minutes: minSession });
 
     const handleSaveSports = () => {
         const primarySport = selectedSports[0];
@@ -76,7 +101,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
         };
         if (primarySport && SPORT_PRESETS[primarySport]) {
             const preset = SPORT_PRESETS[primarySport];
-            const timeOpt = TIME_OF_DAY_OPTIONS.find(
+            const timeOpt = timeOfDayOptions.find(
                 (o) => o.id === (preset.preferredTimeOfDay ?? "anytime")
             );
             setPreferences({
@@ -142,13 +167,27 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
         setPrefSubIndex(i);
     };
 
+    const gustDiffSuffix =
+        mergedPrefs.maxGustWindDifferenceKph != null && mergedPrefs.maxGustWindDifferenceKph > 0
+            ? t("onboarding.review.gustDiff", { diff: mergedPrefs.maxGustWindDifferenceKph })
+            : "";
+
+    const conditionsSummary = t("onboarding.review.conditionsValue", {
+        maxWind: mergedPrefs.maxWindKph,
+        maxGust: mergedPrefs.maxGustKph,
+        gustDiff: gustDiffSuffix,
+        minTemp: mergedPrefs.minTempC ?? 0,
+        maxTemp: mergedPrefs.maxTempC ?? 35,
+        feelsLike: mergedPrefs.useFeelsLikeTemp ? t("onboarding.review.feelsLike") : "",
+        maxPrecip: mergedPrefs.maxPrecipitationProbabilityPercent ?? 20,
+    });
 
     return (
         <main className="flex-1">
             <div className="mx-auto max-w-container px-4 py-12 md:px-8 md:py-16">
                 {/* Progress */}
                 <div className="mb-10">
-                    <ol className="flex items-center justify-center gap-2 sm:gap-4" aria-label="Progress">
+                    <ol className="flex items-center justify-center gap-2 sm:gap-4" aria-label={t("onboarding.progressAria")}>
                         {STEPS.map((s, i) => (
                             <li
                                 key={s.id}
@@ -172,7 +211,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                             "bg-secondary_alt/50 text-quaternary hover:bg-secondary_alt cursor-pointer"
                                     )}
                                     aria-current={i === stepIndex ? "step" : undefined}
-                                    aria-label={`${s.label}${i < stepIndex ? ", completed" : i === stepIndex ? ", current" : ""}`}
+                                    aria-label={`${s.label}${i < stepIndex ? t("onboarding.stepCompleted") : i === stepIndex ? t("onboarding.stepCurrent") : ""}`}
                                 >
                                     {i < stepIndex ? <Check className="size-4" /> : i + 1}
                                 </button>
@@ -206,11 +245,10 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                         <div className="text-center">
                             <div className="mb-6 h-px w-12 bg-brand-400 mx-auto" />
                             <h1 className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                                Find your next good wind window
+                                {t("onboarding.welcome.title")}
                             </h1>
                             <p className="mt-4 text-md text-tertiary">
-                                Answer a few quick questions and GoWind will set up your locations and weather
-                                preferences.
+                                {t("onboarding.welcome.description")}
                             </p>
                             <Button
                                 size="lg"
@@ -219,7 +257,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                 iconTrailing={ArrowRight}
                                 onClick={() => setStepIndex(1)}
                             >
-                                Get started
+                                {t("onboarding.welcome.getStarted")}
                             </Button>
                         </div>
                     )}
@@ -229,16 +267,16 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                         <div>
                             <div className="mb-6 h-px w-12 bg-brand-400" />
                             <h2 className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                                What activity do you practice?
+                                {t("onboarding.sports.title")}
                             </h2>
                             <p className="mt-2 text-md text-tertiary">
-                                We'll use this to suggest the best default weather settings.
+                                {t("onboarding.sports.description")}
                             </p>
                             <CheckboxGroup
                                 value={selectedSports}
                                 onChange={setSelectedSports}
                                 className="mt-8"
-                                aria-label="Sports"
+                                aria-label={t("onboarding.sports.aria")}
                             >
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                     {SPORTS.map((sport) => (
@@ -246,7 +284,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                             key={sport.id}
                                             value={sport.id}
                                             size="md"
-                                            label={sport.label}
+                                            label={t(sportListKey(sport.id))}
                                             className={(state) =>
                                                 cx(
                                                     "w-full cursor-pointer items-center rounded-xl border p-4 transition duration-100 ease-linear",
@@ -267,7 +305,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     iconLeading={ArrowLeft}
                                     onClick={() => setStepIndex(0)}
                                 >
-                                    Go back
+                                    {t("common.actions.goBack")}
                                 </Button>
                                 <Button
                                     size="lg"
@@ -276,7 +314,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     onClick={handleSaveSports}
                                     isDisabled={selectedSports.length === 0}
                                 >
-                                    Continue
+                                    {t("onboarding.sports.continue")}
                                 </Button>
                             </div>
                         </div>
@@ -287,8 +325,8 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                         <div>
                             <LocationsManager
                                 headingLevel="h2"
-                                title="Choose your locations"
-                                description="Choose one or more places you often go to. You can always edit them later."
+                                title={t("onboarding.locations.title")}
+                                description={t("onboarding.locations.description")}
                             />
 
                             <div className="mt-8 flex w-full items-center justify-between gap-2">
@@ -298,7 +336,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     iconLeading={ArrowLeft}
                                     onClick={() => setStepIndex(1)}
                                 >
-                                    Go back
+                                    {t("common.actions.goBack")}
                                 </Button>
                                 <Button
                                     size="lg"
@@ -307,7 +345,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     onClick={() => goToWizardStep(3)}
                                     isDisabled={locations.length === 0}
                                 >
-                                    Continue to preferences
+                                    {t("onboarding.locations.continue")}
                                 </Button>
                             </div>
                         </div>
@@ -319,8 +357,8 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                             activeIndex={prefSubIndex}
                             onSelectSubstep={jumpToPrefSubstep}
                             headingLevel="h2"
-                            title="Set your preferred conditions"
-                            description="Work through each area — your progress is saved as you go."
+                            title={t("preferences.page.title")}
+                            description={t("preferences.page.descriptionOnboarding")}
                             footer={
                                 <div className="flex w-full flex-wrap items-center justify-between gap-2">
                                     <Button
@@ -329,7 +367,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                         iconLeading={ArrowLeft}
                                         onClick={handleBackFromPref}
                                     >
-                                        Go back
+                                        {t("common.actions.goBack")}
                                     </Button>
                                     <Button
                                         size="lg"
@@ -338,8 +376,8 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                         onClick={handleContinueFromPref}
                                     >
                                         {prefSubIndex >= PREF_SUBSTEPS.length - 1
-                                            ? "Continue to review"
-                                            : "Continue"}
+                                            ? t("onboarding.preferences.continueToReview")
+                                            : t("onboarding.preferences.continue")}
                                     </Button>
                                 </div>
                             }
@@ -362,47 +400,37 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     <Check className="size-8 text-brand-600 dark:text-brand-400" />
                                 </div>
                                 <h2 className="text-display-xs font-semibold tracking-tight text-primary md:text-display-sm">
-                                    You're ready to find your next windows
+                                    {t("onboarding.review.title")}
                                 </h2>
                                 <p className="mt-4 text-md text-tertiary">
-                                    GoWind will now find the best upcoming windows based on your locations and
-                                    preferences.
+                                    {t("onboarding.review.description")}
                                 </p>
 
                                 <div className="mt-8 rounded-xl border border-secondary bg-white p-6 text-left dark:bg-primary">
-                                    <h3 className="text-sm font-semibold text-secondary">Summary</h3>
+                                    <h3 className="text-sm font-semibold text-secondary">{t("onboarding.review.summary")}</h3>
                                     <dl className="mt-4 space-y-3">
                                         <div>
-                                            <dt className="text-xs text-tertiary">Activity</dt>
+                                            <dt className="text-xs text-tertiary">{t("onboarding.review.activity")}</dt>
                                             <dd className="text-sm font-medium text-primary">
                                                 {selectedSports
-                                                    .map((id) => SPORTS.find((s) => s.id === id)?.label ?? id)
+                                                    .map((id) => t(sportListKey(id)))
                                                     .join(", ")}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt className="text-xs text-tertiary">Locations</dt>
+                                            <dt className="text-xs text-tertiary">{t("onboarding.review.locations")}</dt>
                                             <dd className="text-sm font-medium text-primary">
                                                 {locations.map((l) => l.name).join(", ")}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt className="text-xs text-tertiary">Conditions</dt>
+                                            <dt className="text-xs text-tertiary">{t("onboarding.review.conditions")}</dt>
                                             <dd className="text-sm font-medium text-primary">
-                                                Wind &lt; {mergedPrefs.maxWindKph} km/h, gusts &lt;{" "}
-                                                {mergedPrefs.maxGustKph} km/h
-                                                {mergedPrefs.maxGustWindDifferenceKph != null &&
-                                                    mergedPrefs.maxGustWindDifferenceKph > 0 && (
-                                                        <> (max {mergedPrefs.maxGustWindDifferenceKph} km/h diff)</>
-                                                    )}
-                                                {" · "}
-                                                {mergedPrefs.minTempC ?? 0}–{mergedPrefs.maxTempC ?? 35}°C
-                                                {mergedPrefs.useFeelsLikeTemp ? " (feels like)" : ""} · Precip &lt;{" "}
-                                                {mergedPrefs.maxPrecipitationProbabilityPercent ?? 20}%
+                                                {conditionsSummary}
                                             </dd>
                                         </div>
                                         <div>
-                                            <dt className="text-xs text-tertiary">Session</dt>
+                                            <dt className="text-xs text-tertiary">{t("onboarding.review.session")}</dt>
                                             <dd className="text-sm font-medium text-primary">{sessionSummary}</dd>
                                         </div>
                                     </dl>
@@ -418,7 +446,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                             setPrefSubIndex(3);
                                         }}
                                     >
-                                        Go back
+                                        {t("common.actions.goBack")}
                                     </Button>
                                     <Button
                                         size="lg"
@@ -426,7 +454,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                         href={onComplete ? undefined : "/go-time"}
                                         onClick={onComplete}
                                     >
-                                        See my windows
+                                        {t("onboarding.review.seeWindows")}
                                     </Button>
                                 </div>
                             </div>

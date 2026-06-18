@@ -11,6 +11,7 @@ import {
 import { OnboardingQuestionnaire } from "@/components/onboarding/onboarding-questionnaire";
 import { useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
+import { useT } from "@/providers/locale-provider";
 
 function initialSubIndexFromUrl(searchParams: URLSearchParams): number {
     const raw = searchParams.get("section");
@@ -19,6 +20,7 @@ function initialSubIndexFromUrl(searchParams: URLSearchParams): number {
 }
 
 export const Preferences = () => {
+    const t = useT();
     const { user, isLoading } = useAuth();
     const { needsFullOnboarding } = useSetup();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -59,8 +61,8 @@ export const Preferences = () => {
                 <PreferencesSubstepLayout
                     activeIndex={prefSubIndex}
                     onSelectSubstep={jumpToPrefSubstep}
-                    title="Set your preferred conditions"
-                    description="Work through each area — changes save automatically."
+                    title={t("preferences.page.title")}
+                    description={t("preferences.page.descriptionAutoSave")}
                 >
                     <PreferencesForm
                         ref={formRef}

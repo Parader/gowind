@@ -11,12 +11,15 @@ import { Toggle } from "@/components/base/toggle/toggle";
 import { Tabs } from "@/components/application/tabs/tabs";
 import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import type { GoTimeWindow } from "@/api/goTimes";
+import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 
 export type GoTimeFocusView = "next" | "best" | "all";
 
 /** `all` = every saved location; otherwise filter to this `locationId`. */
 export const GO_TIME_ALL_LOCATIONS = "all" as const;
+
+type TFn = (key: string, params?: TranslateParams) => string;
 
 function startOfLocalDay(d: Date): Date {
     const x = new Date(d);
@@ -97,15 +100,15 @@ function buildNextCandidates(futureSortedAsc: GoTimeWindow[]): GoTimeWindow[] {
     return noGo.length > 0 ? noGo : [...futureSortedAsc];
 }
 
-function getTimeFrameLabel(dateKey: string, now: Date): string {
+function getTimeFrameLabel(dateKey: string, now: Date, t: TFn, dateLocale: string): string {
     const todayKey = toLocalDateKey(now);
     const tomorrow = addDaysLocal(startOfLocalDay(now), 1);
     const tomorrowKey = toLocalDateKey(tomorrow);
 
-    if (dateKey === todayKey) return "Today";
-    if (dateKey === tomorrowKey) return "Tomorrow";
+    if (dateKey === todayKey) return t("common.dates.today");
+    if (dateKey === tomorrowKey) return t("common.dates.tomorrow");
     const dayStart = new Date(dateKey + "T12:00:00");
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(dateLocale, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -115,7 +118,10 @@ function getTimeFrameLabel(dateKey: string, now: Date): string {
 /** Day → Location → Windows for the full “All” view (chronological). */
 function groupByDayThenLocation(
     windows: GoTimeWindow[],
-    now: Date
+    now: Date,
+    t: TFn,
+    dateLocale: string,
+    defaultLocation: string,
 ): Array<{
     dateKey: string;
     label: string;
@@ -138,7 +144,7 @@ function groupByDayThenLocation(
         const byLoc = byDate.get(dateKey)!;
         const locations = [...byLoc.entries()].map(([locationId, locWindows]) => ({
             locationId,
-            locationName: locWindows[0]?.locationName ?? "Location",
+            locationName: locWindows[0]?.locationName ?? defaultLocation,
             windows: [...locWindows].sort(compareByStartTime),
         }));
         locations.sort((a, b) =>
@@ -146,7 +152,7 @@ function groupByDayThenLocation(
         );
         return {
             dateKey,
-            label: getTimeFrameLabel(dateKey, now),
+            label: getTimeFrameLabel(dateKey, now, t, dateLocale),
             locations,
         };
     });
@@ -161,19 +167,22 @@ interface GoTimeFocusViewsProps {
 }
 
 export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGoodOnlyChange }: GoTimeFocusViewsProps) {
+    const t = useT();
+    const { dateLocale } = useLocale();
     const now = useMemo(() => new Date(), []);
+    const defaultLocation = t("goTime.page.defaultLocation");
 
     const locationOptions = useMemo(() => {
         const map = new Map<string, string>();
         for (const w of windows) {
             if (!map.has(w.locationId)) {
-                map.set(w.locationId, (w.locationName ?? "").trim() || "Location");
+                map.set(w.locationId, (w.locationName ?? "").trim() || defaultLocation);
             }
         }
         return [...map.entries()]
             .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
             .map(([id, name]) => ({ value: id, label: name }));
-    }, [windows]);
+    }, [windows, defaultLocation]);
 
     const [locationFilterId, setLocationFilterId] = useState<string>(GO_TIME_ALL_LOCATIONS);
 
@@ -199,8 +208,9 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
 
     const locationScopeLabel =
         locationFilterId === GO_TIME_ALL_LOCATIONS
-            ? "all locations"
-            : locationOptions.find((o) => o.value === locationFilterId)?.label ?? "this location";
+            ? t("goTime.focusViews.scopeAllLocations")
+            : locationOptions.find((o) => o.value === locationFilterId)?.label ??
+              t("goTime.focusViews.scopeThisLocation");
 
     const { nextCandidates, nextWindowNote } = useMemo(() => {
         const future = [...filtered]
@@ -218,16 +228,14 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
         if (hasMarginal) {
             return {
                 nextCandidates: candidates,
-                nextWindowNote:
-                    "No “good” slot yet—these are upcoming windows that still fit your limits (marginal).",
+                nextWindowNote: t("goTime.focusViews.next.noteMarginal"),
             };
         }
         return {
             nextCandidates: candidates,
-            nextWindowNote:
-                "No good or marginal slot yet—these are the windows we could form from the forecast.",
+            nextWindowNote: t("goTime.focusViews.next.noteNoGo"),
         };
-    }, [filtered, now]);
+    }, [filtered, now, t]);
 
     const bestCandidates = useMemo(() => {
         const pool = filtered.filter((w) => isWindowInNextSevenDays(w, now));
@@ -236,9 +244,14 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
     }, [filtered, now]);
 
     const allByDayAndLocation = useMemo(
-        () => groupByDayThenLocation(filtered, now),
-        [filtered, now],
+        () => groupByDayThenLocation(filtered, now, t, dateLocale, defaultLocation),
+        [filtered, now, t, dateLocale, defaultLocation],
     );
+
+    const goodMarker = "\uE000";
+    const nextDescriptionParts = t("goTime.focusViews.next.description", {
+        good: goodMarker,
+    }).split(goodMarker);
 
     return (
         <div className="space-y-6">
@@ -254,14 +267,14 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                             fullWidth
                             className="min-w-0 opacity-95 sm:min-w-0 sm:max-w-[min(100%,42rem)] sm:flex-1"
                         >
-                            <Tabs.Item id="next" label="Next" />
-                            <Tabs.Item id="best" label="Best" />
-                            <Tabs.Item id="all" label="All" />
+                            <Tabs.Item id="next" label={t("goTime.focusViews.tabs.next")} />
+                            <Tabs.Item id="best" label={t("goTime.focusViews.tabs.best")} />
+                            <Tabs.Item id="all" label={t("goTime.focusViews.tabs.all")} />
                         </Tabs.List>
                         <Toggle
                             size="sm"
                             slim
-                            label="Good only"
+                            label={t("goTime.focusViews.goodOnly")}
                             isSelected={goodOnly}
                             onChange={onGoodOnlyChange}
                             className="shrink-0 [&_p]:text-xs [&_p]:font-normal [&_p]:text-tertiary"
@@ -269,11 +282,11 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                     </div>
                     <div className="w-full min-w-0 sm:w-auto">
                         <NativeSelect
-                            aria-label="Location filter"
+                            aria-label={t("goTime.focusViews.locationFilterAria")}
                             value={locationFilterId}
                             onChange={(e) => setLocationFilterId(e.target.value)}
                             options={[
-                                { value: GO_TIME_ALL_LOCATIONS, label: "All locations" },
+                                { value: GO_TIME_ALL_LOCATIONS, label: t("goTime.focusViews.allLocations") },
                                 ...locationOptions.map((o) => ({ value: o.value, label: o.label })),
                             ]}
                             className="w-full min-w-[10rem] sm:w-48"
@@ -285,13 +298,16 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                         <section aria-labelledby="focus-next-heading" className="space-y-4">
                             <header>
                                 <h2 id="focus-next-heading" className="text-lg font-semibold text-primary">
-                                    When can you go next?
+                                    {t("goTime.focusViews.next.title")}
                                 </h2>
                                 <p className="mt-1 text-sm text-tertiary">
-                                    Earliest <span className="font-medium text-secondary">good</span> window first; if none,
-                                    earliest marginal, then other—never a weaker slot ahead of a stronger one.{" "}
+                                    {nextDescriptionParts[0]}
+                                    <span className="font-medium text-secondary">
+                                        {t("goTime.focusViews.next.goodEmphasis")}
+                                    </span>
+                                    {nextDescriptionParts[1]}{" "}
                                     <span className="text-tertiary">
-                                        Scope: <span className="font-medium text-secondary">{locationScopeLabel}</span>.
+                                        {t("goTime.focusViews.next.scope", { scope: locationScopeLabel })}
                                     </span>
                                 </p>
                             </header>
@@ -304,15 +320,15 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                                 <FocusWindowSwiper
                                     key={`next-${locationFilterId}-${goodOnly}-${nextCandidates.map((w) => w.id).join("|")}`}
                                     windows={nextCandidates}
-                                    navLabel="Browse next windows"
+                                    navLabel={t("goTime.focusViews.next.navLabel")}
                                 />
                             ) : (
                                 <EmptyFocus
-                                    title="No upcoming window"
+                                    title={t("goTime.focusViews.next.emptyTitle")}
                                     body={
                                         goodOnly
-                                            ? "No good-rated windows are scheduled ahead. Turn off “Good only” or adjust your setup."
-                                            : "No forecast windows ahead match your preferences. Try widening limits or adding locations."
+                                            ? t("goTime.focusViews.next.emptyGoodOnly")
+                                            : t("goTime.focusViews.next.emptyDefault")
                                     }
                                 />
                             )}
@@ -322,25 +338,25 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                         <section aria-labelledby="focus-best-heading" className="space-y-4">
                             <header>
                                 <h2 id="focus-best-heading" className="text-lg font-semibold text-primary">
-                                    What’s the best slot this week?
+                                    {t("goTime.focusViews.best.title")}
                                 </h2>
                                 <p className="mt-1 text-sm text-tertiary">
-                                    Highest suitability in the next seven days ({locationScopeLabel}).
+                                    {t("goTime.focusViews.best.description", { scope: locationScopeLabel })}
                                 </p>
                             </header>
                             {bestCandidates.length > 0 ? (
                                 <FocusWindowSwiper
                                     key={`best-${locationFilterId}-${goodOnly}-${bestCandidates.map((w) => w.id).join("|")}`}
                                     windows={bestCandidates}
-                                    navLabel="Browse best windows this week"
+                                    navLabel={t("goTime.focusViews.best.navLabel")}
                                 />
                             ) : (
                                 <EmptyFocus
-                                    title="No window in the next 7 days"
+                                    title={t("goTime.focusViews.best.emptyTitle")}
                                     body={
                                         goodOnly
-                                            ? "No good-rated windows in range. Try turning off “Good only” or check your limits."
-                                            : "Nothing in the next week matches your preferences."
+                                            ? t("goTime.focusViews.best.emptyGoodOnly")
+                                            : t("goTime.focusViews.best.emptyDefault")
                                     }
                                 />
                             )}
@@ -350,20 +366,19 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                         <section aria-labelledby="focus-all-heading" className="space-y-4">
                             <header>
                                 <h2 id="focus-all-heading" className="text-lg font-semibold text-primary">
-                                    All windows
+                                    {t("goTime.focusViews.all.title")}
                                 </h2>
                                 <p className="mt-1 text-sm text-tertiary">
-                                    Full forecast window list for {locationScopeLabel}, grouped by day and place—same horizon
-                                    as Next and Best, with every slot visible.
+                                    {t("goTime.focusViews.all.description", { scope: locationScopeLabel })}
                                 </p>
                             </header>
                             {allByDayAndLocation.length === 0 ? (
                                 <EmptyFocus
-                                    title="No windows match"
+                                    title={t("goTime.focusViews.all.emptyTitle")}
                                     body={
                                         goodOnly
-                                            ? "Nothing in this scope with “Good only” on. Turn it off or widen your setup."
-                                            : "No forecast windows match your current filters."
+                                            ? t("goTime.focusViews.all.emptyGoodOnly")
+                                            : t("goTime.focusViews.all.emptyDefault")
                                     }
                                 />
                             ) : (
@@ -405,6 +420,7 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
 }
 
 function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; navLabel: string }) {
+    const t = useT();
     const [swiper, setSwiper] = useState<SwiperInstance | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const total = windows.length;
@@ -438,9 +454,9 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                     pagination={{ clickable: true }}
                     a11y={{
                         enabled: true,
-                        prevSlideMessage: "Previous wind window",
-                        nextSlideMessage: "Next wind window",
-                        paginationBulletMessage: "Go to wind window {{index}}",
+                        prevSlideMessage: t("goTime.focusViews.swiper.prevSlide"),
+                        nextSlideMessage: t("goTime.focusViews.swiper.nextSlide"),
+                        paginationBulletMessage: t("goTime.focusViews.swiper.paginationBullet"),
                     }}
                     onSwiper={setSwiper}
                     onSlideChange={(s) => setActiveIndex(s.activeIndex)}
@@ -461,7 +477,7 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                                 navButtonClass,
                                 "absolute top-[calc(50%-1.5rem)] -left-7 z-10 hidden -translate-y-1/2 sm:block lg:-left-14",
                             )}
-                            aria-label="Previous window"
+                            aria-label={t("goTime.focusViews.swiper.prevWindow")}
                             disabled={atStart}
                             onClick={() => swiper?.slidePrev()}
                         >
@@ -473,7 +489,7 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                                 navButtonClass,
                                 "absolute top-[calc(50%-1.5rem)] -right-7 z-10 hidden -translate-y-1/2 sm:block lg:-right-14",
                             )}
-                            aria-label="Next window"
+                            aria-label={t("goTime.focusViews.swiper.nextWindow")}
                             disabled={atEnd}
                             onClick={() => swiper?.slideNext()}
                         >
@@ -489,20 +505,24 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                         <button
                             type="button"
                             className={cx(navButtonClass, "absolute left-0")}
-                            aria-label="Previous window"
+                            aria-label={t("goTime.focusViews.swiper.prevWindow")}
                             disabled={atStart}
                             onClick={() => swiper?.slidePrev()}
                         >
                             <ChevronLeft className="size-6 stroke-[1.75px]" />
                         </button>
-                        <div className="flex items-center justify-center gap-1.5" role="tablist" aria-label="Wind window pages">
+                        <div
+                            className="flex items-center justify-center gap-1.5"
+                            role="tablist"
+                            aria-label={t("goTime.focusViews.swiper.pagesAria")}
+                        >
                             {windows.map((w, index) => (
                                 <button
                                     key={w.id}
                                     type="button"
                                     role="tab"
                                     aria-selected={index === activeIndex}
-                                    aria-label={`Go to wind window ${index + 1}`}
+                                    aria-label={t("goTime.focusViews.swiper.goToWindow", { index: index + 1 })}
                                     className={cx(
                                         "size-2 rounded-full transition",
                                         index === activeIndex ? "bg-brand-solid" : "bg-quaternary",
@@ -514,7 +534,7 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                         <button
                             type="button"
                             className={cx(navButtonClass, "absolute right-0")}
-                            aria-label="Next window"
+                            aria-label={t("goTime.focusViews.swiper.nextWindow")}
                             disabled={atEnd}
                             onClick={() => swiper?.slideNext()}
                         >
@@ -523,14 +543,17 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                     </div>
                     <div className="mt-2 hidden justify-center sm:flex">
                         <span className="text-sm tabular-nums text-tertiary">
-                            {activeIndex + 1}/{total}
+                            {t("goTime.focusViews.swiper.counter", {
+                                current: activeIndex + 1,
+                                total,
+                            })}
                         </span>
                     </div>
                 </>
             ) : null}
 
             <div className="sr-only" aria-live="polite">
-                Showing wind window {activeIndex + 1} of {total}.
+                {t("goTime.focusViews.swiper.showing", { current: activeIndex + 1, total })}
             </div>
         </div>
     );
