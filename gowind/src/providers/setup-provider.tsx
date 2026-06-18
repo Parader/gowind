@@ -17,8 +17,9 @@ interface SetupContextValue {
     updateLocation: (id: string, updates: Partial<Pick<Location, "name" | "lat" | "lng" | "region">>) => void;
     setPreferences: (preferences: Preferences) => void;
     isSetupComplete: boolean;
-    /** True only when both preferences and locations are empty (first-time user). Questionnaire shown only in this case or when user clicks "Run setup again". */
+    /** True until the user finishes the setup wizard (review) with at least one location saved. */
     needsFullOnboarding: boolean;
+    completeOnboarding: () => void;
     loadForUser: (userId: string) => void;
     clearForUser: () => void;
     isSaving: boolean;
@@ -36,20 +37,26 @@ const SetupContext = createContext<SetupContextValue | null>(null);
 export function SetupProvider({ children }: { children: ReactNode }) {
     const [locations, setLocations] = useState<Location[]>([]);
     const [preferences, setPreferencesState] = useState<Preferences | null>(null);
+    const [onboardingComplete, setOnboardingComplete] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     const persistToApi = useCallback(
-        async (locs: Location[], prefs: Preferences | null) => {
+        async (locs: Location[], prefs: Preferences | null, wizardComplete?: boolean) => {
             if (!currentUserId) return;
             setIsSaving(true);
+            const completeFlag = wizardComplete ?? onboardingComplete;
             try {
-                await setupApi.putSetup(locs, prefs);
+                await setupApi.putSetup(locs, prefs, completeFlag);
             } catch {
                 // Fallback to localStorage if API fails
                 try {
                     localStorage.setItem(getStorageKey(currentUserId, "locations"), JSON.stringify(locs));
                     localStorage.setItem(getStorageKey(currentUserId, "preferences"), JSON.stringify(prefs ?? {}));
+                    localStorage.setItem(
+                        getStorageKey(currentUserId, "onboarding"),
+                        completeFlag ? "1" : "0",
+                    );
                 } catch {
                     /* ignore */
                 }
@@ -57,29 +64,32 @@ export function SetupProvider({ children }: { children: ReactNode }) {
                 setIsSaving(false);
             }
         },
-        [currentUserId]
+        [currentUserId, onboardingComplete]
     );
 
     const clearForUser = useCallback(() => {
         setCurrentUserId(null);
         setLocations([]);
         setPreferencesState(null);
+        setOnboardingComplete(false);
     }, []);
 
     const loadForUser = useCallback(async (userId: string) => {
         setCurrentUserId(userId);
         try {
-            const { locations: locs, preferences: prefs } = await setupApi.getSetup();
+            const { locations: locs, preferences: prefs, onboardingComplete: complete } = await setupApi.getSetup();
             const validLocs = (locs ?? []).filter(
                 (l): l is Location => l && typeof l.lat === "number" && typeof l.lng === "number"
             );
             setLocations(validLocs);
             setPreferencesState(prefs && typeof prefs === "object" ? prefs : null);
+            setOnboardingComplete(complete === true);
         } catch {
             // Fallback to localStorage if API fails
             try {
                 const locJson = localStorage.getItem(getStorageKey(userId, "locations"));
                 const prefJson = localStorage.getItem(getStorageKey(userId, "preferences"));
+                const onboardingFlag = localStorage.getItem(getStorageKey(userId, "onboarding"));
                 const parsedLocations = locJson ? JSON.parse(locJson) : [];
                 setLocations(
                     parsedLocations.filter(
@@ -87,9 +97,11 @@ export function SetupProvider({ children }: { children: ReactNode }) {
                     )
                 );
                 setPreferencesState(prefJson ? JSON.parse(prefJson) : null);
+                setOnboardingComplete(onboardingFlag === "1");
             } catch {
                 setLocations([]);
                 setPreferencesState(null);
+                setOnboardingComplete(false);
             }
         }
     }, []);
@@ -139,8 +151,13 @@ export function SetupProvider({ children }: { children: ReactNode }) {
         [locations, persistToApi]
     );
 
+    const completeOnboarding = useCallback(() => {
+        setOnboardingComplete(true);
+        persistToApi(locations, preferences, true);
+    }, [locations, preferences, persistToApi]);
+
     const isSetupComplete = locations.length > 0 && preferences !== null;
-    const needsFullOnboarding = locations.length === 0 && preferences === null;
+    const needsFullOnboarding = !onboardingComplete || !isSetupComplete;
 
     const value = useMemo(
         () => ({
@@ -152,6 +169,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
             setPreferences,
             isSetupComplete,
             needsFullOnboarding,
+            completeOnboarding,
             loadForUser,
             clearForUser,
             isSaving,
@@ -165,6 +183,7 @@ export function SetupProvider({ children }: { children: ReactNode }) {
             setPreferences,
             isSetupComplete,
             needsFullOnboarding,
+            completeOnboarding,
             loadForUser,
             clearForUser,
             isSaving,

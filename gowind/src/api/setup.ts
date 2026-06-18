@@ -4,15 +4,20 @@ import type { Location, Preferences } from "@/types/setup";
 export interface SetupResponse {
     locations: Location[];
     preferences: Preferences | null;
+    onboardingComplete?: boolean;
 }
 
 export async function getSetup(): Promise<SetupResponse> {
     return apiFetch("/setup");
 }
 
-export async function putSetup(locations: Location[], preferences: Preferences | null): Promise<SetupResponse> {
+export async function putSetup(
+    locations: Location[],
+    preferences: Preferences | null,
+    onboardingComplete?: boolean,
+): Promise<SetupResponse> {
     return apiFetch("/setup", {
         method: "PUT",
-        body: JSON.stringify({ locations, preferences }),
+        body: JSON.stringify({ locations, preferences, onboardingComplete }),
     });
 }

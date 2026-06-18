@@ -31,6 +31,26 @@ const STEP_IDS = ["welcome", "sports", "location", "preferences", "review"] as c
 
 const STEP_ICONS = [Check, Activity, Map01, Sliders01, Check] as const;
 
+function scrollWizardToTop() {
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            window.scrollTo(0, 0);
+        });
+    });
+}
+
+/** Resume wizard at the first incomplete step (after refresh). */
+function getInitialWizardStep(
+    fromStart: boolean,
+    locations: { length: number },
+    preferences: unknown,
+): number {
+    if (fromStart) return 0;
+    if (locations.length > 0 && preferences) return 3;
+    if (preferences) return 2;
+    return 0;
+}
+
 interface OnboardingQuestionnaireProps {
     onComplete?: () => void;
 }
@@ -38,7 +58,7 @@ interface OnboardingQuestionnaireProps {
 export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}) => {
     const { onComplete } = props;
     const t = useT();
-    const { setPreferences, locations, preferences } = useSetup();
+    const { setPreferences, locations, preferences, completeOnboarding } = useSetup();
 
     const STEPS = useMemo(
         () =>
@@ -52,7 +72,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
 
     const timeOfDayOptions = useMemo(() => getTimeOfDayOptions(t), [t]);
 
-    const initialStep = onComplete ? 0 : locations.length > 0 ? 3 : 0;
+    const initialStep = getInitialWizardStep(Boolean(onComplete), locations, preferences);
     const [stepIndex, setStepIndex] = useState(initialStep);
     /** Sub-step within the single Preferences wizard step (0 = wind … 3 = timing). */
     const [prefSubIndex, setPrefSubIndex] = useState(0);
@@ -66,7 +86,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
             skipInitialScrollRef.current = false;
             return;
         }
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        scrollWizardToTop();
     }, [stepIndex, prefSubIndex]);
 
     const step = STEPS[stepIndex];
@@ -132,7 +152,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
         } else {
             setPreferences(base);
         }
-        setStepIndex(2);
+        goToWizardStep(2);
     };
 
     const flushPreferencesForm = () => {
@@ -140,8 +160,11 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
     };
 
     const goToWizardStep = (i: number) => {
-        setStepIndex(i);
-        if (i === 3) setPrefSubIndex(0);
+        let target = i;
+        if (target >= 3 && locations.length === 0) target = 2;
+        if (target === 4 && locations.length === 0) target = 2;
+        setStepIndex(target);
+        if (target === 3) setPrefSubIndex(0);
     };
 
     const handleContinueFromPref = () => {
@@ -149,7 +172,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
         if (prefSubIndex < PREF_SUBSTEPS.length - 1) {
             setPrefSubIndex((j) => j + 1);
         } else {
-            setStepIndex(4);
+            goToWizardStep(4);
         }
     };
 
@@ -158,7 +181,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
         if (prefSubIndex > 0) {
             setPrefSubIndex((j) => j - 1);
         } else {
-            setStepIndex(2);
+            goToWizardStep(2);
         }
     };
 
@@ -255,7 +278,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                 color="primary"
                                 className="mt-8"
                                 iconTrailing={ArrowRight}
-                                onClick={() => setStepIndex(1)}
+                                onClick={() => goToWizardStep(1)}
                             >
                                 {t("onboarding.welcome.getStarted")}
                             </Button>
@@ -303,7 +326,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     size="lg"
                                     color="tertiary"
                                     iconLeading={ArrowLeft}
-                                    onClick={() => setStepIndex(0)}
+                                    onClick={() => goToWizardStep(0)}
                                 >
                                     {t("common.actions.goBack")}
                                 </Button>
@@ -334,7 +357,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     size="lg"
                                     color="tertiary"
                                     iconLeading={ArrowLeft}
-                                    onClick={() => setStepIndex(1)}
+                                    onClick={() => goToWizardStep(1)}
                                 >
                                     {t("common.actions.goBack")}
                                 </Button>
@@ -442,7 +465,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                         color="tertiary"
                                         iconLeading={ArrowLeft}
                                         onClick={() => {
-                                            setStepIndex(3);
+                                            goToWizardStep(3);
                                             setPrefSubIndex(3);
                                         }}
                                     >
@@ -451,8 +474,10 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                     <Button
                                         size="lg"
                                         color="primary"
-                                        href={onComplete ? undefined : "/go-time"}
-                                        onClick={onComplete}
+                                        onClick={() => {
+                                            completeOnboarding();
+                                            onComplete?.();
+                                        }}
                                     >
                                         {t("onboarding.review.seeWindows")}
                                     </Button>
