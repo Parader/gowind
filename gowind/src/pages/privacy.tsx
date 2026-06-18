@@ -83,11 +83,34 @@ export const Privacy = () => {
                                     <li>Access, update, or delete your account and data through the app</li>
                                     <li>Export your data (contact us to request an export)</li>
                                     <li>Opt out of non-essential communications</li>
+                                    <li>Withdraw cookie consent at any time via Cookie settings in the footer</li>
                                 </ul>
                             </div>
 
                             <div>
-                                <h2 className="mb-3 text-lg font-semibold text-primary">7. Contact</h2>
+                                <h2 className="mb-3 text-lg font-semibold text-primary">7. Cookies and Similar Technologies</h2>
+                                <p className="mb-3">
+                                    We use cookies and local storage to operate GoWind. Under GDPR and Quebec&apos;s Law 25
+                                    (Loi 25), we ask for your consent before using non-essential cookies.
+                                </p>
+                                <p className="mb-2 font-medium text-secondary">Essential (always active):</p>
+                                <ul className="mb-3 list-inside list-disc space-y-1 pl-2">
+                                    <li>Authentication tokens and session data to keep you signed in</li>
+                                    <li>Theme and interface preferences</li>
+                                    <li>Security and fraud prevention related to your account</li>
+                                </ul>
+                                <p className="mb-2 font-medium text-secondary">Analytics (optional, requires consent):</p>
+                                <ul className="list-inside list-disc space-y-1 pl-2">
+                                    <li>Usage analytics to understand how the Service is used and improve it</li>
+                                </ul>
+                                <p className="mt-3">
+                                    You can accept, reject, or customize these preferences using the cookie banner or
+                                    Cookie settings link in the footer. You may change your choice at any time.
+                                </p>
+                            </div>
+
+                            <div>
+                                <h2 className="mb-3 text-lg font-semibold text-primary">8. Contact</h2>
                                 <p>
                                     For privacy-related questions, contact us at the email or address provided on the
                                     About page.

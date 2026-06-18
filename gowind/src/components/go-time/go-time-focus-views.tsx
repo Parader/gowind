@@ -411,16 +411,28 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
     const atStart = activeIndex <= 0;
     const atEnd = activeIndex >= total - 1;
 
+    const navButtonClass =
+        "shrink-0 cursor-pointer text-fg-secondary transition hover:text-fg-primary disabled:cursor-default disabled:text-fg-disabled";
+
     return (
         <div
-            className="go-time-swiper overflow-hidden px-8 sm:px-12 lg:px-16 [&_.swiper-pagination]:!-bottom-0 [&_.swiper-pagination-bullet]:!bg-quaternary [&_.swiper-pagination-bullet]:!opacity-100 [&_.swiper-pagination-bullet-active]:!bg-brand-solid [&_.swiper-slide]:opacity-25 [&_.swiper-slide]:transition-opacity [&_.swiper-slide-active]:opacity-100"
+            className={cx(
+                "go-time-swiper overflow-hidden px-0 sm:px-12 lg:px-16",
+                "[&_.swiper-pagination]:hidden sm:[&_.swiper-pagination]:!flex",
+                "[&_.swiper-pagination]:!-bottom-0 [&_.swiper-pagination]:!left-0 [&_.swiper-pagination]:!w-full [&_.swiper-pagination]:!justify-center [&_.swiper-pagination]:!items-center [&_.swiper-pagination]:!gap-1.5",
+                "[&_.swiper-pagination-bullet]:!bg-quaternary [&_.swiper-pagination-bullet]:!opacity-100 [&_.swiper-pagination-bullet-active]:!bg-brand-solid",
+                "[&_.swiper-slide]:opacity-100 sm:[&_.swiper-slide]:opacity-25 [&_.swiper-slide]:transition-opacity [&_.swiper-slide-active]:opacity-100",
+            )}
             aria-label={navLabel}
         >
             <div className="relative">
                 <Swiper
                     modules={[A11y, Keyboard, Navigation, Pagination]}
                     slidesPerView={1}
-                    spaceBetween={16}
+                    spaceBetween={0}
+                    breakpoints={{
+                        640: { spaceBetween: 16 },
+                    }}
                     threshold={8}
                     keyboard={{ enabled: true }}
                     pagination={{ clickable: true }}
@@ -432,10 +444,10 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                     }}
                     onSwiper={setSwiper}
                     onSlideChange={(s) => setActiveIndex(s.activeIndex)}
-                    className="!overflow-visible !pb-12"
+                    className="!overflow-hidden !pb-0 sm:!overflow-visible sm:!pb-12"
                 >
                     {windows.map((w) => (
-                        <SwiperSlide key={w.id} className="!h-auto">
+                        <SwiperSlide key={w.id} className="!h-auto !w-full">
                             <GoTimeWindowCard w={w} />
                         </SwiperSlide>
                     ))}
@@ -445,7 +457,10 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                     <>
                         <button
                             type="button"
-                            className="absolute top-[calc(50%-1.5rem)] -left-7 z-10 shrink-0 -translate-y-1/2 cursor-pointer text-fg-secondary transition hover:text-fg-primary disabled:cursor-default disabled:text-fg-disabled sm:-left-10 lg:-left-14"
+                            className={cx(
+                                navButtonClass,
+                                "absolute top-[calc(50%-1.5rem)] -left-7 z-10 hidden -translate-y-1/2 sm:block lg:-left-14",
+                            )}
                             aria-label="Previous window"
                             disabled={atStart}
                             onClick={() => swiper?.slidePrev()}
@@ -454,7 +469,10 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                         </button>
                         <button
                             type="button"
-                            className="absolute top-[calc(50%-1.5rem)] -right-7 z-10 shrink-0 -translate-y-1/2 cursor-pointer text-fg-secondary transition hover:text-fg-primary disabled:cursor-default disabled:text-fg-disabled sm:-right-10 lg:-right-14"
+                            className={cx(
+                                navButtonClass,
+                                "absolute top-[calc(50%-1.5rem)] -right-7 z-10 hidden -translate-y-1/2 sm:block lg:-right-14",
+                            )}
                             aria-label="Next window"
                             disabled={atEnd}
                             onClick={() => swiper?.slideNext()}
@@ -466,11 +484,49 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
             </div>
 
             {total > 1 ? (
-                <div className="mt-2 flex justify-center">
-                    <span className="text-sm tabular-nums text-tertiary">
-                        {activeIndex + 1}/{total}
-                    </span>
-                </div>
+                <>
+                    <div className="relative mt-3 flex min-h-6 items-center justify-center sm:hidden">
+                        <button
+                            type="button"
+                            className={cx(navButtonClass, "absolute left-0")}
+                            aria-label="Previous window"
+                            disabled={atStart}
+                            onClick={() => swiper?.slidePrev()}
+                        >
+                            <ChevronLeft className="size-6 stroke-[1.75px]" />
+                        </button>
+                        <div className="flex items-center justify-center gap-1.5" role="tablist" aria-label="Wind window pages">
+                            {windows.map((w, index) => (
+                                <button
+                                    key={w.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={index === activeIndex}
+                                    aria-label={`Go to wind window ${index + 1}`}
+                                    className={cx(
+                                        "size-2 rounded-full transition",
+                                        index === activeIndex ? "bg-brand-solid" : "bg-quaternary",
+                                    )}
+                                    onClick={() => swiper?.slideTo(index)}
+                                />
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            className={cx(navButtonClass, "absolute right-0")}
+                            aria-label="Next window"
+                            disabled={atEnd}
+                            onClick={() => swiper?.slideNext()}
+                        >
+                            <ChevronRight className="size-6 stroke-[1.75px]" />
+                        </button>
+                    </div>
+                    <div className="mt-2 hidden justify-center sm:flex">
+                        <span className="text-sm tabular-nums text-tertiary">
+                            {activeIndex + 1}/{total}
+                        </span>
+                    </div>
+                </>
             ) : null}
 
             <div className="sr-only" aria-live="polite">

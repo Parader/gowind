@@ -2,18 +2,12 @@ import type { ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router";
 import { ChevronDown } from "@untitledui/icons";
-import {
-    Button as AriaButton,
-    Dialog as AriaDialog,
-    DialogTrigger as AriaDialogTrigger,
-    Modal as AriaModal,
-    ModalOverlay as AriaModalOverlay,
-    Popover as AriaPopover,
-} from "react-aria-components";
+import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Button } from "@/components/base/buttons/button";
 import { ThemeSwitcher } from "@/components/base/theme-switcher/theme-switcher";
 import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import { GoWindLogoMinimal } from "@/components/foundations/logo/gowind-logo-minimal";
+import { HeaderMobileMenu } from "@/components/marketing/header-navigation/header-mobile-menu";
 import { HeaderProfileMenu } from "@/components/marketing/header-navigation/header-profile-menu";
 import { getCachedAuthUser, useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
@@ -30,107 +24,6 @@ const publicNavItems: HeaderNavItem[] = [
     { label: "Home", href: "/" },
     { label: "About", href: "/about" },
 ];
-
-const legalNavItems: HeaderNavItem[] = [
-    { label: "Privacy", href: "/privacy" },
-    { label: "Terms", href: "/terms" },
-];
-
-const mobileNavLinkClass = ({ isActive }: { isActive: boolean }) =>
-    cx(
-        "flex items-center justify-between px-4 py-3 text-md font-semibold hover:bg-primary_hover",
-        isActive ? "text-brand-600 dark:text-brand-400 bg-primary_hover" : "text-primary",
-    );
-
-const MobileNavItem = (props: {
-    className?: string;
-    label: string;
-    href?: string;
-    children?: ReactNode;
-    onNavigate?: () => void;
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    if (props.href) {
-        return (
-            <li>
-                <NavLink
-                    to={props.href}
-                    onClick={props.onNavigate}
-                    className={mobileNavLinkClass}
-                >
-                    {props.label}
-                </NavLink>
-            </li>
-        );
-    }
-
-    return (
-        <li className="flex flex-col gap-0.5">
-            <button
-                aria-expanded={isOpen}
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex w-full items-center justify-between px-4 py-3 text-md font-semibold text-primary hover:bg-primary_hover"
-            >
-                {props.label}{" "}
-                <ChevronDown
-                    className={cx("size-4 stroke-[2.625px] text-fg-quaternary transition duration-100 ease-linear", isOpen ? "-rotate-180" : "rotate-0")}
-                />
-            </button>
-            {isOpen && <div>{props.children}</div>}
-        </li>
-    );
-};
-
-const MobileFooter = ({ onNavigate }: { onNavigate?: () => void }) => {
-    const { user, isLoading, logout } = useAuth();
-    const effectiveUser = user ?? (isLoading ? getCachedAuthUser() : null);
-
-    return (
-        <div className="flex flex-col gap-8 border-t border-secondary px-4 py-6">
-            <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-secondary">Theme</span>
-                <ThemeSwitcher size="md" />
-            </div>
-            <div>
-                <ul className="grid grid-cols-2 gap-x-6 gap-y-3">
-                    {legalNavItems.map((navItem) => (
-                        <li key={navItem.label}>
-                            <Button color="link-gray" size="lg" href={navItem.href}>
-                                {navItem.label}
-                            </Button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            {effectiveUser ? (
-                <div className="flex flex-col gap-3">
-                    <NavLink to="/account/settings" className={mobileNavLinkClass} onClick={onNavigate}>
-                        Account settings
-                    </NavLink>
-                    <Button
-                        color="secondary"
-                        size="lg"
-                        onClick={() => {
-                            onNavigate?.();
-                            void logout();
-                        }}
-                    >
-                        Log out
-                    </Button>
-                </div>
-            ) : (
-                !isLoading && (
-                    <div className="flex flex-col gap-3">
-                        <Button color="secondary" size="lg" href="/login">
-                            Log in
-                        </Button>
-                    </div>
-                )
-            )}
-        </div>
-    );
-};
 
 interface HeaderProps {
     items?: HeaderNavItem[];
@@ -241,7 +134,7 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
     const overDarkBackground = useHeaderContrast(isFloating, headerRef);
     const lightContent = overDarkBackground;
     const { pathname } = useLocation();
-    const { user, isAdmin, isLoading } = useAuth();
+    const { user, isAdmin, isLoading, logout } = useAuth();
     const { needsFullOnboarding } = useSetup();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileHeaderHidden, setMobileHeaderHidden] = useState(false);
@@ -256,7 +149,10 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
           ]
         : [];
     const navItems = effectiveUser ? [...setupNavItems, ...adminNavItems, ...items] : items;
-    const closeMobileMenu = () => setMobileMenuOpen(false);
+    const mobileAppNavItems = setupNavItems
+        .concat(adminNavItems)
+        .filter((item): item is HeaderNavItem & { href: string } => Boolean(item.href))
+        .map((item) => ({ label: item.label, href: item.href }));
 
     useEffect(() => {
         setMobileMenuOpen(false);
@@ -392,81 +288,15 @@ export const Header = ({ items = publicNavItems, isFullWidth, isFloating, classN
                         )}
                     </div>
 
-                    {/* Mobile menu */}
-                    <AriaDialogTrigger isOpen={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                        <AriaButton
-                            aria-label="Toggle navigation menu"
-                            className={({ isFocusVisible, isHovered }) =>
-                                cx(
-                                    "group ml-auto cursor-pointer rounded-lg p-2 md:hidden",
-                                    isHovered && "bg-primary_hover",
-                                    isFocusVisible && "outline-2 outline-offset-2 outline-focus-ring",
-                                )
-                            }
-                        >
-                            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path
-                                    className={cx("hidden group-aria-expanded:block", lightContent ? "text-white" : "text-secondary")}
-                                    d="M18 6L6 18M6 6L18 18"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                                <path
-                                    className={cx("group-aria-expanded:hidden", lightContent ? "text-white" : "text-secondary")}
-                                    d="M3 12H21M3 6H21M3 18H21"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-                        </AriaButton>
-                        <AriaModalOverlay
-                            isDismissable
-                            className={({ isEntering, isExiting }) =>
-                                cx(
-                                    "fixed inset-0 z-50 bg-overlay/70 backdrop-blur-md md:hidden",
-                                    isEntering && "duration-300 ease-in-out animate-in fade-in",
-                                    isExiting && "duration-200 ease-in-out animate-out fade-out",
-                                )
-                            }
-                        >
-                            <AriaModal className="w-full max-w-none cursor-auto will-change-transform md:hidden">
-                                <AriaDialog className="flex h-dvh flex-col bg-primary outline-hidden focus:outline-hidden md:hidden">
-                                    {effectiveUser && (
-                                        <div className="border-b border-secondary px-4 py-4">
-                                            <p className="truncate text-sm font-semibold text-primary">{effectiveUser.email}</p>
-                                            {effectiveUser.name && (
-                                                <p className="truncate text-xs text-tertiary">{effectiveUser.name}</p>
-                                            )}
-                                        </div>
-                                    )}
-                                    <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-                                        <ul className="flex flex-col gap-0.5 py-5">
-                                            {navItems.map((navItem) =>
-                                                navItem.menu ? (
-                                                    <MobileNavItem key={navItem.label} label={navItem.label}>
-                                                        {navItem.menu}
-                                                    </MobileNavItem>
-                                                ) : (
-                                                    <MobileNavItem
-                                                        key={navItem.label}
-                                                        label={navItem.label}
-                                                        href={navItem.href}
-                                                        onNavigate={closeMobileMenu}
-                                                    />
-                                                ),
-                                            )}
-                                        </ul>
-
-                                        <MobileFooter onNavigate={closeMobileMenu} />
-                                    </nav>
-                                </AriaDialog>
-                            </AriaModal>
-                        </AriaModalOverlay>
-                    </AriaDialogTrigger>
+                    <HeaderMobileMenu
+                        isOpen={mobileMenuOpen}
+                        onOpenChange={setMobileMenuOpen}
+                        appNavItems={mobileAppNavItems}
+                        effectiveUser={effectiveUser}
+                        isLoading={isLoading}
+                        onLogout={() => void logout()}
+                        lightTrigger={lightContent}
+                    />
                 </div>
             </div>
         </header>

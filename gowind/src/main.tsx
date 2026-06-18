@@ -21,6 +21,7 @@ import { SetupLoader } from "@/components/onboarding/setup-loader";
 import { AuthProvider } from "@/providers/auth-provider";
 import { SetupProvider } from "@/providers/setup-provider";
 import { RouteProvider } from "@/providers/router-provider";
+import { CookieConsentProvider } from "@/providers/cookie-consent-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import "@/styles/globals.css";
 
@@ -29,6 +30,7 @@ createRoot(document.getElementById("root")!).render(
         <ThemeProvider defaultTheme="light">
             <BrowserRouter>
                 <ScrollToTop />
+                <CookieConsentProvider>
                 <AuthProvider>
                     <SetupProvider>
                         <SetupLoader>
@@ -55,6 +57,7 @@ createRoot(document.getElementById("root")!).render(
                         </SetupLoader>
                     </SetupProvider>
                 </AuthProvider>
+                </CookieConsentProvider>
             </BrowserRouter>
         </ThemeProvider>
     </StrictMode>,

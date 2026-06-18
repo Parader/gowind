@@ -1010,8 +1010,8 @@ export function GoTimeWindowCard({
             {(hasWindByHeight || windyHref || disagreementFooter) && (
                 <div className="space-y-2 border-t border-secondary/60 pt-2">
                     {(hasWindByHeight && w.windByHeight) || windyHref ? (
-                        <div className="flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                            <div className="flex min-w-0 flex-1 flex-wrap gap-1.5 text-xs">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-2">
+                            <div className="flex min-w-0 flex-wrap gap-1.5 text-xs sm:flex-1">
                                 {hasWindByHeight && w.windByHeight
                                     ? Object.entries(w.windByHeight).map(([key, v]) => (
                                           <span

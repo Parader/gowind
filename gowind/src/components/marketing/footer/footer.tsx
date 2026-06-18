@@ -1,5 +1,6 @@
 import { Heart } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
+import { useCookieConsent } from "@/providers/cookie-consent-provider";
 
 const footerColumns = [
     {
@@ -14,12 +15,14 @@ const footerColumns = [
         links: [
             { label: "Privacy", href: "/privacy" },
             { label: "Terms", href: "/terms" },
+            { label: "Cookie settings", action: "cookie-settings" as const },
         ],
     },
 ];
 
 export const Footer = () => {
     const currentYear = new Date().getFullYear();
+    const { openPreferences } = useCookieConsent();
     const donateUrl =
         import.meta.env.VITE_STRIPE_DONATE_URL?.trim() || import.meta.env.VITE_DONATE_URL?.trim();
 
@@ -57,14 +60,25 @@ export const Footer = () => {
                                 <ul className="flex flex-col gap-2">
                                     {column.links.map((link) => (
                                         <li key={link.label}>
-                                            <Button
-                                                color="link-gray"
-                                                size="sm"
-                                                href={link.href}
-                                                className="text-sm font-medium"
-                                            >
-                                                {link.label}
-                                            </Button>
+                                            {"action" in link && link.action === "cookie-settings" ? (
+                                                <Button
+                                                    color="link-gray"
+                                                    size="sm"
+                                                    className="text-sm font-medium"
+                                                    onClick={openPreferences}
+                                                >
+                                                    {link.label}
+                                                </Button>
+                                            ) : (
+                                                <Button
+                                                    color="link-gray"
+                                                    size="sm"
+                                                    href={"href" in link ? link.href : undefined}
+                                                    className="text-sm font-medium"
+                                                >
+                                                    {link.label}
+                                                </Button>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
