@@ -17,6 +17,7 @@ import { NotFound } from "@/pages/not-found";
 import { Signup } from "@/pages/signup";
 import { AppLayout } from "@/layouts/app-layout";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { DocumentMeta } from "@/components/document-meta";
 import { SetupLoader } from "@/components/onboarding/setup-loader";
 import { AuthProvider } from "@/providers/auth-provider";
 import { SetupProvider } from "@/providers/setup-provider";
@@ -32,6 +33,7 @@ createRoot(document.getElementById("root")!).render(
             <LocaleProvider>
             <BrowserRouter>
                 <ScrollToTop />
+                <DocumentMeta />
                 <CookieConsentProvider>
                 <AuthProvider>
                     <SetupProvider>
