@@ -41,24 +41,44 @@ export function toSafeUser(user: { _id: unknown; email: string; name?: string; i
     };
 }
 
+function normalizeEmail(email: unknown): string {
+    return String(email ?? "")
+        .trim()
+        .toLowerCase();
+}
+
 // POST /auth/signup
 router.post("/signup", async (req: Request, res: Response) => {
     try {
-        const { email, password, name } = req.body;
+        const email = normalizeEmail(req.body?.email);
+        const password = String(req.body?.password ?? "");
+        const name = typeof req.body?.name === "string" ? req.body.name.trim() : undefined;
+
         if (!email || !password) {
             res.status(400).json({ error: "Email and password are required" });
             return;
         }
+        if (password.length < 8) {
+            res.status(400).json({ error: "Password must be at least 8 characters" });
+            return;
+        }
+
         const existing = await User.findOne({ email });
         if (existing) {
             res.status(409).json({ error: "An account with this email already exists" });
             return;
         }
+
         const user = await User.create({ email, password, name: name || undefined });
         const token = signToken({ userId: String(user._id), email: user.email });
         setTokenCookie(res, token);
         res.status(201).json({ user: toSafeUser(user), token });
     } catch (err) {
+        const code = (err as { code?: number }).code;
+        if (code === 11000) {
+            res.status(409).json({ error: "An account with this email already exists" });
+            return;
+        }
         console.error("Signup error:", err);
         res.status(500).json({ error: "Sign up failed" });
     }

@@ -48,7 +48,17 @@ const UserSchema = new Schema<IUser, UserModel, IUserMethods>(
     { timestamps: true }
 );
 
-UserSchema.index({ "oauthAccounts.provider": 1, "oauthAccounts.providerAccountId": 1 }, { unique: true });
+/** Only index linked OAuth rows — email/password users have no oauth entries. */
+UserSchema.index(
+    { "oauthAccounts.provider": 1, "oauthAccounts.providerAccountId": 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            "oauthAccounts.provider": { $type: "string" },
+            "oauthAccounts.providerAccountId": { $type: "string" },
+        },
+    },
+);
 
 UserSchema.pre("save", async function (next) {
     if (!this.isModified("password") || !this.password) return next();

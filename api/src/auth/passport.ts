@@ -12,7 +12,8 @@ passport.use(
         { usernameField: "email", passwordField: "password" },
         async (email, password, done) => {
             try {
-                const user = await User.findOne({ email }).select("+password");
+                const normalized = email.trim().toLowerCase();
+                const user = await User.findOne({ email: normalized }).select("+password");
                 if (!user || !user.password) {
                     return done(null, false, { message: "Invalid email or password" });
                 }

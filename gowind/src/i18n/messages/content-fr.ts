@@ -126,7 +126,7 @@ export const contentFr = {
             passwordPlaceholder: "Créez un mot de passe",
             submit: "Créer le compte",
             signUpFailed: "Échec de l'inscription",
-            or: "ou",
+            orEmail: "ou continuer avec le courriel",
             google: "S'inscrire avec Google",
             hasAccount: "Vous avez déjà un compte?",
             signIn: "Connexion",

@@ -126,7 +126,7 @@ export const contentEn = {
             passwordPlaceholder: "Create a password",
             submit: "Create account",
             signUpFailed: "Sign up failed",
-            or: "or",
+            orEmail: "or continue with email",
             google: "Sign up with Google",
             hasAccount: "Already have an account?",
             signIn: "Sign in",
