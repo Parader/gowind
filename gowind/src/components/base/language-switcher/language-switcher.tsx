@@ -43,7 +43,7 @@ export const LanguageSwitcher = ({ className, size = "md", compact = false, ligh
                 {compact ? (
                     <span className="sr-only">{t(`common.language.${locale}`)}</span>
                 ) : (
-                    <span>{t(`common.language.${locale}`)}</span>
+                    <span className="truncate">{t(`common.language.${locale}`)}</span>
                 )}
             </AriaButton>
             <Popover

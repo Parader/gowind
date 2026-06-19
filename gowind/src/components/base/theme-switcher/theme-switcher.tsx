@@ -2,6 +2,8 @@ import { Moon01, Sun } from "@untitledui/icons";
 import { Button as AriaButton } from "react-aria-components";
 import { useT } from "@/providers/locale-provider";
 import { useTheme } from "@/providers/theme-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import { cx } from "@/utils/cx";
 
 interface ThemeSwitcherProps {
@@ -17,7 +19,9 @@ export const ThemeSwitcher = ({ className, size = "md", lightIcon = false }: The
     const isDark = theme === "dark";
 
     const handleClick = () => {
-        setTheme(isDark ? "light" : "dark");
+        const nextTheme = isDark ? "light" : "dark";
+        setTheme(nextTheme);
+        track(AnalyticsEvents.themeChanged, { from: theme, to: nextTheme });
     };
 
     const iconSize = size === "sm" ? "size-4" : "size-5";

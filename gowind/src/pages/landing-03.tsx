@@ -7,6 +7,8 @@ import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import { getLandingDemoGoTimeWindows, LANDING_DEMO_ROTATE_MS } from "@/data/landing-demo-go-time";
 import { useAuth } from "@/providers/auth-provider";
 import { useT } from "@/providers/locale-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import {
     APP_BACKGROUND_IMAGE,
     APP_BACKGROUND_IMAGE_OPACITY,
@@ -124,6 +126,10 @@ export const Landing03 = () => {
         import.meta.env.VITE_STRIPE_DONATE_URL?.trim() || import.meta.env.VITE_DONATE_URL?.trim();
     const loggedIn = Boolean(user);
 
+    const trackLandingCta = (cta: "sign_up" | "log_in" | "go_time", section: string) => {
+        track(AnalyticsEvents.landingCtaClicked, { cta, section });
+    };
+
     return (
         <main className="flex-1">
                 {/* Hero — default dark header (white nav only on Built for / Say thanks bands) */}
@@ -168,15 +174,28 @@ export const Landing03 = () => {
                                             className="rounded-full"
                                             iconTrailing={ArrowRight}
                                             href="/go-time"
+                                            onClick={() => trackLandingCta("go_time", "hero")}
                                         >
                                             {t("landing.hero.checkGoTimes")}
                                         </Button>
                                     ) : (
                                         <>
-                                            <Button size="lg" color="primary" className="rounded-full" href="/signup">
+                                            <Button
+                                                size="lg"
+                                                color="primary"
+                                                className="rounded-full"
+                                                href="/signup"
+                                                onClick={() => trackLandingCta("sign_up", "hero")}
+                                            >
                                                 {t("landing.hero.signUp")}
                                             </Button>
-                                            <Button size="lg" color="secondary" className="rounded-full" href="/login">
+                                            <Button
+                                                size="lg"
+                                                color="secondary"
+                                                className="rounded-full"
+                                                href="/login"
+                                                onClick={() => trackLandingCta("log_in", "hero")}
+                                            >
                                                 {t("landing.hero.logIn")}
                                             </Button>
                                         </>
@@ -443,6 +462,9 @@ export const Landing03 = () => {
                                 className="rounded-full shrink-0"
                                 iconTrailing={ArrowRight}
                                 href={loggedIn ? "/go-time" : "/signup"}
+                                onClick={() =>
+                                    trackLandingCta(loggedIn ? "go_time" : "sign_up", "final_cta")
+                                }
                             >
                                 {loggedIn ? t("landing.finalCta.checkGoTimes") : t("landing.finalCta.getStarted")}
                             </Button>

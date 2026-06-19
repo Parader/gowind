@@ -6,6 +6,8 @@ import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import { getGoTimeShare, type GoTimeShareResponse } from "@/api/go-time-shares";
 import { useAuth } from "@/providers/auth-provider";
 import { useLocale, useT } from "@/providers/locale-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 
 function formatExpiry(iso: string, dateLocale: string): string {
     return new Intl.DateTimeFormat(dateLocale, {
@@ -36,11 +38,22 @@ export function GoTimeShare() {
         setError(null);
         getGoTimeShare(shareId)
             .then((data) => {
-                if (!cancelled) setShare(data);
+                if (!cancelled) {
+                    setShare(data);
+                    track(AnalyticsEvents.goTimeShareViewed, {
+                        share_id: shareId,
+                        available: true,
+                        category: data.snapshot.window.category,
+                    });
+                }
             })
             .catch((err) => {
                 if (!cancelled) {
                     setError(err instanceof Error ? err.message : t("goTimeShare.unavailable"));
+                    track(AnalyticsEvents.goTimeShareViewed, {
+                        share_id: shareId,
+                        available: false,
+                    });
                 }
             })
             .finally(() => {

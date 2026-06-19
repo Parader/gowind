@@ -4,6 +4,8 @@ import { interpolate } from "@/i18n/interpolate";
 import { en } from "@/i18n/messages/en";
 import { fr } from "@/i18n/messages/fr";
 import { resolveMessage } from "@/i18n/resolve";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import type { Locale, Messages } from "@/i18n/types";
 
 export type { Locale };
@@ -49,7 +51,12 @@ export const LocaleProvider = ({ children }: LocaleProviderProps) => {
     const [locale, setLocaleState] = useState<Locale>(detectInitialLocale);
 
     const setLocale = useCallback((next: Locale) => {
-        setLocaleState(next);
+        setLocaleState((prev) => {
+            if (prev !== next) {
+                track(AnalyticsEvents.languageChanged, { from: prev, to: next });
+            }
+            return next;
+        });
         localStorage.setItem(STORAGE_KEY, next);
     }, []);
 

@@ -12,6 +12,8 @@ import { Tabs } from "@/components/application/tabs/tabs";
 import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import type { GoTimeWindow } from "@/api/goTimes";
 import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import { cx } from "@/utils/cx";
 
 export type GoTimeFocusView = "next" | "best" | "all";
@@ -254,12 +256,16 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
     }).split(goodMarker);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
             <Tabs
                 selectedKey={view}
-                onSelectionChange={(k) => onViewChange(String(k) as GoTimeFocusView)}
+                onSelectionChange={(k) => {
+                    const next = String(k) as GoTimeFocusView;
+                    onViewChange(next);
+                    track(AnalyticsEvents.goTimeFocusViewChanged, { view: next });
+                }}
             >
-                <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-x-4 lg:gap-y-2">
+                <div className="flex flex-col gap-2 md:gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-x-4 lg:gap-y-2">
                     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 lg:min-w-0 lg:flex-1">
                         <Tabs.List
                             type="button-minimal"
@@ -276,7 +282,10 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                             slim
                             label={t("goTime.focusViews.goodOnly")}
                             isSelected={goodOnly}
-                            onChange={onGoodOnlyChange}
+                            onChange={(v) => {
+                                onGoodOnlyChange(v);
+                                track(AnalyticsEvents.goTimeGoodOnlyToggled, { enabled: v });
+                            }}
                             className="shrink-0 [&_p]:text-xs [&_p]:font-normal [&_p]:text-tertiary"
                         />
                     </div>
@@ -284,7 +293,13 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                         <NativeSelect
                             aria-label={t("goTime.focusViews.locationFilterAria")}
                             value={locationFilterId}
-                            onChange={(e) => setLocationFilterId(e.target.value)}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                setLocationFilterId(value);
+                                track(AnalyticsEvents.goTimeLocationFilterChanged, {
+                                    filter: value === GO_TIME_ALL_LOCATIONS ? "all" : value,
+                                });
+                            }}
                             options={[
                                 { value: GO_TIME_ALL_LOCATIONS, label: t("goTime.focusViews.allLocations") },
                                 ...locationOptions.map((o) => ({ value: o.value, label: o.label })),
@@ -294,9 +309,9 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                         />
                     </div>
                 </div>
-                <Tabs.Panel id="next" className="mt-8 outline-none focus:outline-none">
-                        <section aria-labelledby="focus-next-heading" className="space-y-4">
-                            <header>
+                <Tabs.Panel id="next" className="mt-3 outline-none focus:outline-none md:mt-8">
+                        <section aria-label={t("goTime.focusViews.next.title")} className="space-y-3 md:space-y-4">
+                            <header className="max-md:hidden">
                                 <h2 id="focus-next-heading" className="text-lg font-semibold text-primary">
                                     {t("goTime.focusViews.next.title")}
                                 </h2>
@@ -334,9 +349,9 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                             )}
                         </section>
                     </Tabs.Panel>
-                    <Tabs.Panel id="best" className="mt-8 outline-none focus:outline-none">
-                        <section aria-labelledby="focus-best-heading" className="space-y-4">
-                            <header>
+                    <Tabs.Panel id="best" className="mt-3 outline-none focus:outline-none md:mt-8">
+                        <section aria-label={t("goTime.focusViews.best.title")} className="space-y-3 md:space-y-4">
+                            <header className="max-md:hidden">
                                 <h2 id="focus-best-heading" className="text-lg font-semibold text-primary">
                                     {t("goTime.focusViews.best.title")}
                                 </h2>
@@ -362,9 +377,9 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                             )}
                         </section>
                     </Tabs.Panel>
-                    <Tabs.Panel id="all" className="mt-8 outline-none focus:outline-none">
-                        <section aria-labelledby="focus-all-heading" className="space-y-4">
-                            <header>
+                    <Tabs.Panel id="all" className="mt-3 outline-none focus:outline-none md:mt-8">
+                        <section aria-label={t("goTime.focusViews.all.title")} className="space-y-3 md:space-y-4">
+                            <header className="max-md:hidden">
                                 <h2 id="focus-all-heading" className="text-lg font-semibold text-primary">
                                     {t("goTime.focusViews.all.title")}
                                 </h2>

@@ -4,6 +4,13 @@ import { useNavigate } from "react-router";
 import type { User } from "@/api/auth";
 import * as authApi from "@/api/auth";
 import { consumeOAuthTokenFromHash, setAuthToken } from "@/api/auth-token";
+import {
+    identifyUser,
+    resetAnalyticsUser,
+    track,
+    trackAuthSuccess,
+} from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 
 const AUTH_CACHE_KEY = "gowind_auth_user";
 
@@ -50,7 +57,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
         setIsAdmin(admin);
         setCachedUser(nextUser);
-        if (!nextUser) setAuthToken(null);
+        if (!nextUser) {
+            setAuthToken(null);
+            resetAnalyticsUser();
+            return;
+        }
+        identifyUser(nextUser.id, {
+            email: nextUser.email,
+            name: nextUser.name,
+            is_admin: admin,
+        });
     }, []);
 
     const loadUser = useCallback(
@@ -87,6 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         void (async () => {
             const authenticatedUser = await loadUser({ retries: isOAuthReturn ? 3 : 1 });
+            if (isOAuthReturn && authenticatedUser) {
+                trackAuthSuccess(AnalyticsEvents.userLoggedIn, "google");
+            }
             if (!isOAuthReturn) return;
 
             params.delete("logged_in");
@@ -106,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { user: nextUser, token } = await authApi.login(email, password);
             setAuthToken(token);
             applyUser(nextUser);
+            trackAuthSuccess(AnalyticsEvents.userLoggedIn, "email");
             navigate("/go-time");
         },
         [navigate, applyUser]
@@ -116,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const { user: nextUser, token } = await authApi.signup(email, password, name);
             setAuthToken(token);
             applyUser(nextUser);
+            trackAuthSuccess(AnalyticsEvents.userSignedUp, "email");
             navigate("/go-time");
         },
         [navigate, applyUser]
@@ -124,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = useCallback(async () => {
         await authApi.logout();
         applyUser(null);
+        track(AnalyticsEvents.userLoggedOut);
         navigate("/");
     }, [navigate, applyUser]);
 

@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
 import { useAuth } from "@/providers/auth-provider";
 import { useT } from "@/providers/locale-provider";
+import { trackAuthFailure, trackOAuthStarted } from "@/lib/analytics";
 
 export const Login = () => {
     const { login, getGoogleLoginUrl } = useAuth();
@@ -24,6 +25,7 @@ export const Login = () => {
         try {
             await login(email, password);
         } catch (err) {
+            trackAuthFailure("login", "email");
             setError(err instanceof Error ? err.message : t("auth.login.signInFailed"));
         } finally {
             setIsLoading(false);
@@ -31,6 +33,7 @@ export const Login = () => {
     };
 
     const handleGoogleLogin = () => {
+        trackOAuthStarted("login");
         window.location.href = getGoogleLoginUrl();
     };
     return (

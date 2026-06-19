@@ -10,7 +10,10 @@ import type { GoTimeWindow, GoTimesMeta, ProviderFetchStatus } from "@/api/goTim
 import { useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
 import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import { cx } from "@/utils/cx";
+import { scrollPageToTop } from "@/utils/scroll-to-top";
 
 type TFn = (key: string, params?: TranslateParams) => string;
 
@@ -151,6 +154,19 @@ export const GoTime = () => {
     const [goodOnly, setGoodOnly] = useState(true);
     const [forecastSettingsOpen, setForecastSettingsOpen] = useState(false);
     const forecastSettingsRef = useRef<HTMLDetailsElement>(null);
+    const wasInOnboardingRef = useRef<boolean | null>(null);
+
+    useEffect(() => {
+        const inOnboarding = needsFullOnboarding || showOnboarding;
+        if (wasInOnboardingRef.current === null) {
+            wasInOnboardingRef.current = inOnboarding;
+            return;
+        }
+        if (wasInOnboardingRef.current && !inOnboarding) {
+            scrollPageToTop();
+        }
+        wasInOnboardingRef.current = inOnboarding;
+    }, [needsFullOnboarding, showOnboarding]);
 
     useEffect(() => {
         if (!user || needsFullOnboarding) return;
@@ -172,6 +188,13 @@ export const GoTime = () => {
                     );
                     setMinSessionLengthMinutes(res.minSessionLengthMinutes ?? 60);
                     setWeatherDataFetchedAt(res.weatherDataFetchedAt ?? null);
+                    track(AnalyticsEvents.goTimeLoaded, {
+                        window_count: res.windows?.length ?? 0,
+                        good_count: res.meta?.goodCount ?? 0,
+                        marginal_count: res.meta?.marginalCount ?? 0,
+                        no_go_count: res.meta?.noGoCount ?? 0,
+                        location_count: res.meta?.locationsChecked?.length ?? 0,
+                    });
                 }
             })
             .catch((err) => {
@@ -228,8 +251,8 @@ export const GoTime = () => {
 
     return (
         <main className="flex-1">
-            <div className="mx-auto max-w-container px-4 py-12 md:px-8 md:py-16">
-                <div className="mb-6 h-px w-12 bg-brand-400" />
+            <div className="mx-auto max-w-container px-4 py-6 md:px-8 md:py-16">
+                <div className="mb-4 h-px w-12 bg-brand-400 md:mb-6" />
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="flex items-center gap-2">
@@ -338,7 +361,7 @@ export const GoTime = () => {
                                 </details>
                             )}
                         </div>
-                        <p className="mt-2 text-md text-tertiary">{t("goTime.page.subtitle")}</p>
+                        <p className="mt-1 hidden text-md text-tertiary md:mt-2 md:block">{t("goTime.page.subtitle")}</p>
                     </div>
                     {isAdmin && (
                         <Button size="md" color="secondary" onClick={() => setShowOnboarding(true)}>
@@ -348,7 +371,7 @@ export const GoTime = () => {
                 </div>
 
                 {/* Windows list */}
-                <div id="windows" className="mt-10 scroll-mt-24">
+                <div id="windows" className="mt-6 scroll-mt-24 md:mt-10">
                     {error && (
                         <p className="rounded-lg border border-error_subtle bg-error-50 px-4 py-3 text-sm text-error dark:bg-error-950/30 dark:border-error-800">
                             {error}

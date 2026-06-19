@@ -26,6 +26,8 @@ import {
     sportPresetLabelKey,
 } from "@/components/onboarding/onboarding-data";
 import { cx } from "@/utils/cx";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents, type AnalyticsSource } from "@/lib/analytics-events";
 import type { ReactNode } from "react";
 import type { Preferences, WeatherHeightFt } from "@/types/setup";
 
@@ -72,11 +74,12 @@ export interface PreferencesFormProps {
      * (e.g. one wizard step per category).
      */
     embeddedLockedSection?: PreferenceSectionId;
+    analyticsSource?: AnalyticsSource;
 }
 
 export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesFormProps>(
     function PreferencesForm(
-        { embedded = false, hideFloatingSave = false, sportsFromParent, embeddedLockedSection },
+        { embedded = false, hideFloatingSave = false, sportsFromParent, embeddedLockedSection, analyticsSource = "preferences" },
         ref
     ) {
     const t = useT();
@@ -255,6 +258,7 @@ export const PreferencesForm = forwardRef<PreferencesFormHandle, PreferencesForm
 
     const save = () => {
         setPreferences(buildPrefs());
+        track(AnalyticsEvents.preferencesSaved, { source: analyticsSource });
     };
 
     useImperativeHandle(ref, () => ({

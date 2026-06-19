@@ -234,14 +234,14 @@ export const HeaderMobileMenu = ({
                                 </div>
 
                                 <div className="shrink-0 border-t border-secondary px-4 py-4">
-                                    <div className="flex items-center justify-between gap-4 rounded-lg bg-secondary_alt px-3 py-2.5">
-                                        <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                                    <div className="flex flex-col gap-2 rounded-lg bg-secondary_alt px-3 py-2.5">
+                                        <div className="flex items-center justify-between gap-3">
                                             <span className="text-sm font-medium text-secondary">{t("common.theme.label")}</span>
                                             <ThemeSwitcher size="md" />
                                         </div>
-                                        <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                                        <div className="flex items-center justify-between gap-3">
                                             <span className="text-sm font-medium text-secondary">{t("common.language.label")}</span>
-                                            <LanguageSwitcher size="md" />
+                                            <LanguageSwitcher size="md" className="min-w-0 shrink" />
                                         </div>
                                     </div>
 

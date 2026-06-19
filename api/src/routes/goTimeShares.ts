@@ -4,7 +4,7 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { authMiddleware } from "../middleware/auth.js";
 import { GoTimeShare } from "../models/GoTimeShare.js";
-import posthog from "../posthog.js";
+import { captureServerEvent } from "../posthog.js";
 
 const router = Router();
 const SHARE_TTL_MS = 4 * 60 * 60 * 1000;
@@ -41,15 +41,11 @@ router.post("/", authMiddleware, async (req: Request, res: Response) => {
         expiresAt,
     });
 
-    posthog.capture({
-        distinctId: userId,
-        event: "go_time_card_shared",
-        properties: {
+    captureServerEvent(userId, "go_time_card_shared", {
             shareId,
             expiresAt: expiresAt.toISOString(),
-            windowId: isRecord(snapshot.window) ? snapshot.window.id : undefined,
-            locationName: isRecord(snapshot.window) ? snapshot.window.locationName : undefined,
-        },
+        windowId: isRecord(snapshot.window) ? snapshot.window.id : undefined,
+        locationName: isRecord(snapshot.window) ? snapshot.window.locationName : undefined,
     });
 
     return res.status(201).json(publicPayload(doc));

@@ -17,6 +17,8 @@ import {
     defaultPreferences,
 } from "@/providers/setup-provider";
 import { useT } from "@/providers/locale-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import {
     SPORTS,
     SPORT_PRESETS,
@@ -25,19 +27,12 @@ import {
     timeOfDayKey,
 } from "./onboarding-data";
 import { cx } from "@/utils/cx";
+import { scrollPageToTop } from "@/utils/scroll-to-top";
 import type { Preferences } from "@/types/setup";
 
 const STEP_IDS = ["welcome", "sports", "location", "preferences", "review"] as const;
 
 const STEP_ICONS = [Check, Activity, Map01, Sliders01, Check] as const;
-
-function scrollWizardToTop() {
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            window.scrollTo(0, 0);
-        });
-    });
-}
 
 /** Resume wizard at the first incomplete step (after refresh). */
 function getInitialWizardStep(
@@ -80,16 +75,32 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
 
     const preferencesFormRef = useRef<PreferencesFormHandle>(null);
     const skipInitialScrollRef = useRef(true);
+    const onboardingStartedRef = useRef(false);
+
+    useEffect(() => {
+        if (onboardingStartedRef.current) return;
+        onboardingStartedRef.current = true;
+        track(AnalyticsEvents.onboardingStarted, { resume: initialStep > 0 });
+    }, [initialStep]);
 
     useEffect(() => {
         if (skipInitialScrollRef.current) {
             skipInitialScrollRef.current = false;
             return;
         }
-        scrollWizardToTop();
+        scrollPageToTop();
     }, [stepIndex, prefSubIndex]);
 
     const step = STEPS[stepIndex];
+
+    useEffect(() => {
+        const prefSubstep = step.id === "preferences" ? PREF_SUBSTEPS[prefSubIndex]?.section : undefined;
+        track(AnalyticsEvents.onboardingStepViewed, {
+            step: step.id,
+            step_index: stepIndex,
+            pref_substep: prefSubstep,
+        });
+    }, [step.id, stepIndex, prefSubIndex, step]);
     const mergedPrefs = { ...defaultPreferences, ...preferences };
     const sessionTimeBlocks =
         mergedPrefs.preferredTimeBlocks?.filter((b) =>
@@ -152,6 +163,10 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
         } else {
             setPreferences(base);
         }
+        track(AnalyticsEvents.onboardingSportsSaved, {
+            sports: selectedSports,
+            sport_count: selectedSports.length,
+        });
         goToWizardStep(2);
     };
 
@@ -350,6 +365,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                 headingLevel="h2"
                                 title={t("onboarding.locations.title")}
                                 description={t("onboarding.locations.description")}
+                                analyticsSource="onboarding"
                             />
 
                             <div className="mt-8 flex w-full items-center justify-between gap-2">
@@ -411,6 +427,7 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                 embeddedLockedSection={PREF_SUBSTEPS[prefSubIndex].section}
                                 hideFloatingSave
                                 sportsFromParent={selectedSports}
+                                analyticsSource="onboarding"
                             />
                         </PreferencesSubstepLayout>
                     )}
@@ -476,7 +493,12 @@ export const OnboardingQuestionnaire = (props: OnboardingQuestionnaireProps = {}
                                         color="primary"
                                         onClick={() => {
                                             completeOnboarding();
+                                            track(AnalyticsEvents.onboardingCompleted, {
+                                                location_count: locations.length,
+                                                sport_count: selectedSports.length,
+                                            });
                                             onComplete?.();
+                                            scrollPageToTop();
                                         }}
                                     >
                                         {t("onboarding.review.seeWindows")}

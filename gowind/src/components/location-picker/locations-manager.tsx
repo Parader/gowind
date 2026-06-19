@@ -6,6 +6,8 @@ import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { LocationsMapView } from "@/components/location-picker/locations-map-view";
 import { useSetup } from "@/providers/setup-provider";
 import { useT } from "@/providers/locale-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents, type AnalyticsSource } from "@/lib/analytics-events";
 import { cx } from "@/utils/cx";
 
 export interface LocationsManagerProps {
@@ -13,6 +15,7 @@ export interface LocationsManagerProps {
     title?: string;
     description?: string;
     className?: string;
+    analyticsSource?: AnalyticsSource;
 }
 
 /**
@@ -24,6 +27,7 @@ export function LocationsManager({
     title,
     description,
     className,
+    analyticsSource = "locations",
 }: LocationsManagerProps) {
     const t = useT();
     const resolvedTitle = title ?? t("locationPicker.manager.title");
@@ -36,6 +40,7 @@ export function LocationsManager({
         const name = locationName.trim();
         if (!name || !selectedCoords) return;
         addLocation({ name, lat: selectedCoords.lat, lng: selectedCoords.lng });
+        track(AnalyticsEvents.locationAdded, { source: analyticsSource, via: "custom" });
         setLocationName("");
         setSelectedCoords(null);
         close();
@@ -46,6 +51,7 @@ export function LocationsManager({
         close: () => void
     ) => {
         addLocation(location);
+        track(AnalyticsEvents.locationAdded, { source: analyticsSource, via: "suggested" });
         close();
     };
 
@@ -133,7 +139,12 @@ export function LocationsManager({
                                                 <Dropdown.Item
                                                     icon={Trash01}
                                                     label={t("common.actions.delete")}
-                                                    onAction={() => removeLocation(loc.id)}
+                                                    onAction={() => {
+                                                        removeLocation(loc.id);
+                                                        track(AnalyticsEvents.locationRemoved, {
+                                                            source: analyticsSource,
+                                                        });
+                                                    }}
                                                 />
                                             </Dropdown.Menu>
                                         </Dropdown.Popover>

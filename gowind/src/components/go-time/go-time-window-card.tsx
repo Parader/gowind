@@ -8,6 +8,8 @@ import {
 import { createGoTimeShare } from "@/api/go-time-shares";
 import { Tooltip, TooltipTrigger } from "@/components/base/tooltip/tooltip";
 import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
+import { track } from "@/lib/analytics";
+import { AnalyticsEvents } from "@/lib/analytics-events";
 import { cx } from "@/utils/cx";
 
 type TFn = (key: string, params?: TranslateParams) => string;
@@ -925,9 +927,19 @@ export function GoTimeWindowCard({
                     url,
                 });
                 setShareState("shared");
+                track(AnalyticsEvents.goTimeWindowShared, {
+                    method: "native",
+                    category: w.category,
+                    location_id: w.locationId,
+                });
             } else {
                 await navigator.clipboard.writeText(url);
                 setShareState("copied");
+                track(AnalyticsEvents.goTimeWindowShared, {
+                    method: "clipboard",
+                    category: w.category,
+                    location_id: w.locationId,
+                });
             }
             window.setTimeout(() => setShareState("idle"), 1800);
         } catch (err) {

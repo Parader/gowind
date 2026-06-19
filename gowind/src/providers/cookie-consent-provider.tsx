@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { CookieBanner } from "@/components/marketing/cookie-banner/cookie-banner";
-import { applyAnalyticsConsent } from "@/lib/analytics";
+import { applyAnalyticsConsent, trackCookieConsent } from "@/lib/analytics";
 import {
     createConsentRecord,
     hasCookieConsentAnswer,
@@ -26,25 +26,26 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     const [bannerOpen, setBannerOpen] = useState(() => !hasCookieConsentAnswer());
     const [preferencesOpen, setPreferencesOpen] = useState(false);
 
-    const persist = useCallback((record: CookieConsentRecord) => {
+    const persist = useCallback((record: CookieConsentRecord, source: "accept_all" | "reject" | "preferences") => {
         writeCookieConsent(record);
         setConsent(record);
         applyAnalyticsConsent(record);
+        trackCookieConsent(record.analytics, source);
         setBannerOpen(false);
         setPreferencesOpen(false);
     }, []);
 
     const acceptAll = useCallback(() => {
-        persist(createConsentRecord(true));
+        persist(createConsentRecord(true), "accept_all");
     }, [persist]);
 
     const rejectNonEssential = useCallback(() => {
-        persist(createConsentRecord(false));
+        persist(createConsentRecord(false), "reject");
     }, [persist]);
 
     const savePreferences = useCallback(
         (analytics: boolean) => {
-            persist(createConsentRecord(analytics));
+            persist(createConsentRecord(analytics), "preferences");
         },
         [persist]
     );

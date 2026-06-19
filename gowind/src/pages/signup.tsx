@@ -5,6 +5,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { useAuth } from "@/providers/auth-provider";
 import { useT } from "@/providers/locale-provider";
+import { trackAuthFailure, trackOAuthStarted } from "@/lib/analytics";
 
 export const Signup = () => {
     const { signup, getGoogleLoginUrl } = useAuth();
@@ -24,6 +25,7 @@ export const Signup = () => {
         try {
             await signup(email, password, name || undefined);
         } catch (err) {
+            trackAuthFailure("signup", "email");
             setError(err instanceof Error ? err.message : t("auth.signup.signUpFailed"));
         } finally {
             setIsLoading(false);
@@ -31,6 +33,7 @@ export const Signup = () => {
     };
 
     const handleGoogleSignup = () => {
+        trackOAuthStarted("signup");
         window.location.href = getGoogleLoginUrl();
     };
     return (

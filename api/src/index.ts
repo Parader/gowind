@@ -104,11 +104,11 @@ main().catch((err) => {
 });
 
 process.on("SIGTERM", async () => {
-    await posthog.shutdown();
+    await posthog?.shutdown();
     process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-    await posthog.shutdown();
+    await posthog?.shutdown();
     process.exit(0);
 });
