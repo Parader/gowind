@@ -1,0 +1,6 @@
+[build]
+  base = "gowind"
+  command = "npm run build"
+  publish = "dist"
+
+# Netlify injects URL / DEPLOY_PRIME_URL at build time for og:image absolute URLs.

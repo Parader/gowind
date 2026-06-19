@@ -3,6 +3,8 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 
+const PRODUCTION_SITE_URL = "https://go-wind.com";
+
 const SITE_META = {
     title: "GoWind — Find your next good wind window",
     description:
@@ -10,9 +12,28 @@ const SITE_META = {
     imageAlt: "GoWind — Find your next good wind window",
 };
 
+function resolveSiteUrl(mode: string, env: Record<string, string>): string {
+    const candidates = [
+        env.VITE_SITE_URL,
+        process.env.URL,
+        process.env.DEPLOY_PRIME_URL,
+        mode === "development" ? env.FRONTEND_URL : undefined,
+        PRODUCTION_SITE_URL,
+    ];
+
+    for (const candidate of candidates) {
+        const url = candidate?.trim();
+        if (!url) continue;
+        if (mode === "production" && /localhost|127\.0\.0\.1/i.test(url)) continue;
+        return url.replace(/\/$/, "");
+    }
+
+    return PRODUCTION_SITE_URL;
+}
+
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, path.resolve(__dirname, ".."), "");
-    const siteUrl = (env.VITE_SITE_URL || env.FRONTEND_URL || "https://gowind.com").replace(/\/$/, "");
+    const siteUrl = resolveSiteUrl(mode, env);
 
     return {
         /** Load `.env` from monorepo root (`tempest/.env`) so one file can serve API + Vite. */

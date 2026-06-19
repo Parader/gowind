@@ -1,1 +1,4 @@
 /*    /index.html   200
+
+# Ensure social preview asset is never rewritten to SPA shell (some hosts need this explicit).
+/og-image.png   /og-image.png   200
