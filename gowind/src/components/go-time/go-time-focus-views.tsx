@@ -166,9 +166,19 @@ interface GoTimeFocusViewsProps {
     onViewChange: (v: GoTimeFocusView) => void;
     goodOnly: boolean;
     onGoodOnlyChange: (v: boolean) => void;
+    locationFilterId: string;
+    onLocationFilterChange: (id: string) => void;
 }
 
-export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGoodOnlyChange }: GoTimeFocusViewsProps) {
+export function GoTimeFocusViews({
+    windows,
+    view,
+    onViewChange,
+    goodOnly,
+    onGoodOnlyChange,
+    locationFilterId,
+    onLocationFilterChange,
+}: GoTimeFocusViewsProps) {
     const t = useT();
     const { dateLocale } = useLocale();
     const now = useMemo(() => new Date(), []);
@@ -186,16 +196,14 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
             .map(([id, name]) => ({ value: id, label: name }));
     }, [windows, defaultLocation]);
 
-    const [locationFilterId, setLocationFilterId] = useState<string>(GO_TIME_ALL_LOCATIONS);
-
     useEffect(() => {
         if (
             locationFilterId !== GO_TIME_ALL_LOCATIONS &&
             !locationOptions.some((o) => o.value === locationFilterId)
         ) {
-            setLocationFilterId(GO_TIME_ALL_LOCATIONS);
+            onLocationFilterChange(GO_TIME_ALL_LOCATIONS);
         }
-    }, [locationFilterId, locationOptions]);
+    }, [locationFilterId, locationOptions, onLocationFilterChange]);
 
     /** API may send suitability-sorted windows; normalize to time-of-day order before any view logic. */
     const windowsChronological = useMemo(
@@ -295,7 +303,7 @@ export function GoTimeFocusViews({ windows, view, onViewChange, goodOnly, onGood
                             value={locationFilterId}
                             onChange={(e) => {
                                 const value = e.target.value;
-                                setLocationFilterId(value);
+                                onLocationFilterChange(value);
                                 track(AnalyticsEvents.goTimeLocationFilterChanged, {
                                     filter: value === GO_TIME_ALL_LOCATIONS ? "all" : value,
                                 });

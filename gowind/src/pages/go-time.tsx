@@ -4,7 +4,7 @@ import { HelpCircle } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import { OnboardingQuestionnaire } from "@/components/onboarding/onboarding-questionnaire";
-import { GoTimeFocusViews, type GoTimeFocusView } from "@/components/go-time/go-time-focus-views";
+import { GoTimeFocusViews, GO_TIME_ALL_LOCATIONS, type GoTimeFocusView } from "@/components/go-time/go-time-focus-views";
 import { getGoTimes } from "@/api/goTimes";
 import type { GoTimeWindow, GoTimesMeta, ProviderFetchStatus } from "@/api/goTimes";
 import { useAuth } from "@/providers/auth-provider";
@@ -12,6 +12,7 @@ import { useSetup } from "@/providers/setup-provider";
 import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
 import { track } from "@/lib/analytics";
 import { AnalyticsEvents } from "@/lib/analytics-events";
+import { readGoTimeViewPrefs, writeGoTimeViewPrefs } from "@/lib/go-time-view-prefs";
 import { cx } from "@/utils/cx";
 import { scrollPageToTop } from "@/utils/scroll-to-top";
 
@@ -152,9 +153,29 @@ export const GoTime = () => {
     const [error, setError] = useState<string | null>(null);
     const [focusView, setFocusView] = useState<GoTimeFocusView>("next");
     const [goodOnly, setGoodOnly] = useState(true);
+    const [locationFilterId, setLocationFilterId] = useState<string>(GO_TIME_ALL_LOCATIONS);
     const [forecastSettingsOpen, setForecastSettingsOpen] = useState(false);
     const forecastSettingsRef = useRef<HTMLDetailsElement>(null);
     const wasInOnboardingRef = useRef<boolean | null>(null);
+    const prefsHydratedForUserRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!user?.id) {
+            prefsHydratedForUserRef.current = null;
+            return;
+        }
+        if (prefsHydratedForUserRef.current === user.id) return;
+        const prefs = readGoTimeViewPrefs(user.id);
+        setFocusView(prefs.focusView);
+        setGoodOnly(prefs.goodOnly);
+        setLocationFilterId(prefs.locationFilterId);
+        prefsHydratedForUserRef.current = user.id;
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (!user?.id || prefsHydratedForUserRef.current !== user.id) return;
+        writeGoTimeViewPrefs(user.id, { focusView, goodOnly, locationFilterId });
+    }, [user?.id, focusView, goodOnly, locationFilterId]);
 
     useEffect(() => {
         const inOnboarding = needsFullOnboarding || showOnboarding;
@@ -229,7 +250,15 @@ export const GoTime = () => {
         };
     }, [forecastSettingsOpen]);
 
-    if (!isLoading && !user) {
+    if (isLoading) {
+        return (
+            <main className="flex flex-1 items-center justify-center px-4 py-16">
+                <LoadingIndicator type="dot-circle" size="lg" label={t("goTime.page.loadingLabel")} />
+            </main>
+        );
+    }
+
+    if (!user) {
         return <Navigate to="/login" replace />;
     }
 
@@ -549,6 +578,8 @@ export const GoTime = () => {
                             onViewChange={setFocusView}
                             goodOnly={goodOnly}
                             onGoodOnlyChange={setGoodOnly}
+                            locationFilterId={locationFilterId}
+                            onLocationFilterChange={setLocationFilterId}
                         />
                     )}
                 </div>

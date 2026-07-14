@@ -13,6 +13,9 @@ function getTokenCookieOptions() {
     const isProduction =
         process.env.NODE_ENV === "production" ||
         process.env.RENDER === "true" ||
+        Boolean(process.env.FLY_APP_NAME) ||
+        Boolean(process.env.KOYEB_APP_ID) ||
+        Boolean(process.env.KOYEB_SERVICE_ID) ||
         process.env.API_URL?.startsWith("https://");
     const sameSite: "lax" | "none" = isProduction ? "none" : "lax";
 
@@ -28,7 +31,7 @@ function getTokenCookieOptions() {
 function setTokenCookie(res: Response, token: string): void {
     res.cookie("token", token, {
         ...getTokenCookieOptions(),
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days
     });
 }
 

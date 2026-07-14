@@ -27,6 +27,8 @@ export interface InputBaseProps extends TextFieldProps {
     tooltipClassName?: string;
     /** Keyboard shortcut to display. */
     shortcut?: string | boolean;
+    /** Mobile keyboard action label (maps to input enterkeyhint). */
+    enterKeyHint?: React.HTMLAttributes<HTMLInputElement>["enterKeyHint"];
     ref?: Ref<HTMLInputElement>;
     groupRef?: Ref<HTMLDivElement>;
     /** Icon component to display on the left side of the input. */
@@ -47,6 +49,7 @@ export const InputBase = ({
     tooltipClassName,
     inputClassName,
     iconClassName,
+    enterKeyHint,
     // Omit this prop to avoid invalid HTML attribute warning
     isRequired: _isRequired,
     ...inputProps
@@ -120,6 +123,7 @@ export const InputBase = ({
                 {...(inputProps as AriaInputProps)}
                 ref={ref}
                 placeholder={placeholder}
+                enterKeyHint={enterKeyHint}
                 className={cx(
                     "m-0 w-full bg-transparent text-md text-primary ring-0 outline-hidden placeholder:text-placeholder autofill:rounded-lg autofill:text-primary",
                     isDisabled && "cursor-not-allowed text-disabled",
@@ -235,6 +239,7 @@ export const Input = ({
     inputClassName,
     wrapperClassName,
     tooltipClassName,
+    enterKeyHint,
     ...props
 }: InputProps) => {
     return (
@@ -256,6 +261,7 @@ export const Input = ({
                             wrapperClassName,
                             tooltipClassName,
                             tooltip,
+                            enterKeyHint,
                         }}
                     />
 

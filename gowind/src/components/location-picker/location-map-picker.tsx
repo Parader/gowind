@@ -154,6 +154,7 @@ export function LocationMapPicker({
                     <input
                         id={searchId}
                         type="search"
+                        enterKeyHint="search"
                         autoComplete="off"
                         placeholder={t("locationPicker.mapPicker.searchPlaceholder")}
                         value={query}
@@ -163,6 +164,15 @@ export function LocationMapPicker({
                         }}
                         onFocus={() => {
                             if (results.length > 0) setOpen(true);
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key !== "Enter") return;
+                            e.preventDefault();
+                            if (results.length > 0) {
+                                pickResult(results[0]!);
+                                return;
+                            }
+                            (e.currentTarget as HTMLInputElement).blur();
                         }}
                         className="w-full rounded-lg border border-secondary bg-white py-2.5 pl-10 pr-3 text-sm text-primary shadow-xs ring-1 ring-secondary ring-inset placeholder:text-quaternary focus:border-brand-300 focus:outline-hidden focus:ring-2 focus:ring-brand dark:bg-primary dark:ring-primary"
                     />

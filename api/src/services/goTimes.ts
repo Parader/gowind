@@ -15,6 +15,8 @@ import {
     buildWeatherSnapshot,
     buildReliabilityExplanation,
     categoryFromSuitability,
+    categoryForWindow,
+    windowHasHighSourceSpread,
     type RawFusionWindow,
     type FusionPreferences,
     type ForecastPoint,
@@ -22,7 +24,7 @@ import {
 
 const COMPUTED_MAX_AGE_MS = 60 * 60 * 1000; // 1 hour
 const HORIZON_DAYS = 7;
-const GO_TIMES_ALGORITHM_VERSION = 3;
+const GO_TIMES_ALGORITHM_VERSION = 4;
 
 /** Drop cached go-times so the next GET recomputes with current setup (preferences/locations). */
 export async function invalidateGoTimesCache(userId: string): Promise<void> {
@@ -556,7 +558,9 @@ function buildFusionHourlyBySource(w: RawFusionWindow): HourlySourceRow[] {
                     gustKmh: p.windGust == null ? null : Math.round(p.windGust),
                     tempC: Math.round(p.temperature ?? 0),
                     precipPct: p.precipitationProbability == null ? null : Math.round(p.precipitationProbability),
-                    category: categoryFromSuitability(match),
+                    category: categoryFromSuitability(match, {
+                        // Per-source rows: do not apply window reliability; use match alone with higher bar via default gates
+                    }),
                     score: Math.round(match * 100),
                 };
             })
@@ -572,7 +576,7 @@ function mapFusionWindowToGoTimeWindow(
     const locId = w.locationId;
     const suit = w.windowSuitability;
     const rel = w.windowReliability;
-    const category = categoryFromSuitability(suit);
+    const category = categoryForWindow(w);
     const winds = w.hours.map((h) => h.fusedWindKmh).filter((v): v is number => v != null);
     const gusts = w.hours.map((h) => h.fusedGustKmh).filter((v): v is number => v != null);
     const temps = w.hours.map((h) => h.fusedTempC).filter((v): v is number => v != null);
@@ -590,8 +594,10 @@ function mapFusionWindowToGoTimeWindow(
             : undefined;
     const notes: string[] = [];
     if (w.minSuitability < 0.45) notes.push("Lower suitability in parts of this window — check details.");
-    if (w.hours.some((h) => h.agreementScore < 0.35) && !outlierProviders?.length) {
-        notes.push("Models diverge on some hours — expand “Model-by-model” for detail.");
+    if (windowHasHighSourceSpread(w.hours) || w.hours.some((h) => h.agreementScore < 0.35)) {
+        if (!outlierProviders?.length) {
+            notes.push("Models diverge on wind/gust — rated carefully; expand “Model-by-model” for detail.");
+        }
     }
 
     const dataMargins = computeDataMarginsFromFusionWindow(w);
@@ -822,9 +828,27 @@ export async function computeAndStoreGoTimes(userId: string): Promise<GoTimesRes
 
     let meta: GoTimesMeta | undefined;
     if (filtered.length === 0 && fusedHours.length > 0) {
-        const goodCount = fusedHours.filter((h) => categoryFromSuitability(h.suitabilityScore) === "GOOD").length;
-        const marginalCount = fusedHours.filter((h) => categoryFromSuitability(h.suitabilityScore) === "MARGINAL").length;
-        const noGoCount = fusedHours.filter((h) => categoryFromSuitability(h.suitabilityScore) === "NO_GO").length;
+        const goodCount = fusedHours.filter(
+            (h) =>
+                categoryFromSuitability(h.suitabilityScore, {
+                    reliability: h.reliabilityScore,
+                    highSpread: windowHasHighSourceSpread([h]),
+                }) === "GOOD",
+        ).length;
+        const marginalCount = fusedHours.filter(
+            (h) =>
+                categoryFromSuitability(h.suitabilityScore, {
+                    reliability: h.reliabilityScore,
+                    highSpread: windowHasHighSourceSpread([h]),
+                }) === "MARGINAL",
+        ).length;
+        const noGoCount = fusedHours.filter(
+            (h) =>
+                categoryFromSuitability(h.suitabilityScore, {
+                    reliability: h.reliabilityScore,
+                    highSpread: windowHasHighSourceSpread([h]),
+                }) === "NO_GO",
+        ).length;
 
         const futureHours = fusedHours.filter((h) => new Date(h.timestampUtc).getTime() >= now.getTime());
         const nearMissCandidates = futureHours
@@ -844,7 +868,10 @@ export async function computeAndStoreGoTimes(userId: string): Promise<GoTimesRes
                 startTime: start.toISOString(),
                 endTime: end.toISOString(),
                 score: Math.round(h.suitabilityScore * 100),
-                category: categoryFromSuitability(h.suitabilityScore),
+                category: categoryFromSuitability(h.suitabilityScore, {
+                    reliability: h.reliabilityScore,
+                    highSpread: windowHasHighSourceSpread([h]),
+                }),
                 windKmh: h.fusedWindKmh ?? 0,
                 gustKmh: h.fusedGustKmh,
                 tempC: h.fusedTempC ?? 0,

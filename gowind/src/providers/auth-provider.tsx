@@ -48,7 +48,8 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(getCachedUser);
+    // Do not trust sessionStorage alone — wait for /auth/me before treating as logged in on protected routes.
+    const [user, setUser] = useState<User | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
@@ -87,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
             }
 
+            // Auth failed — clear any stale cache so we never show wizard as if logged in.
             applyUser(null);
             setIsLoading(false);
             return null;

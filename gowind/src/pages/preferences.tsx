@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Navigate, useSearchParams } from "react-router";
+import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import {
     PreferencesForm,
     type PreferencesFormHandle,
@@ -47,7 +48,15 @@ export const Preferences = () => {
         setPrefSubIndex(i);
     };
 
-    if (!isLoading && !user) {
+    if (isLoading) {
+        return (
+            <main className="flex flex-1 items-center justify-center px-4 py-16">
+                <LoadingIndicator type="dot-circle" size="lg" label={t("common.actions.loading")} />
+            </main>
+        );
+    }
+
+    if (!user) {
         return <Navigate to="/login" replace />;
     }
 

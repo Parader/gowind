@@ -86,9 +86,9 @@ export const FUSION_CONFIG = {
         completeness: 0.15,
     },
     MAX_FETCH_AGE_HOURS: 6,
-    /** Agreement from spread (km/h): <=a → 1, <=b → 0.7, <=c → 0.4, else 0.1 */
-    WIND_SPREAD_KMH: [3, 6, 10] as [number, number, number],
-    GUST_SPREAD_KMH: [4, 8, 12] as [number, number, number],
+    /** AGREEMENT: spread thresholds (km/h) — tighter so disagreement hurts reliability more. */
+    WIND_SPREAD_KMH: [2.5, 5, 8] as [number, number, number],
+    GUST_SPREAD_KMH: [3, 6, 10] as [number, number, number],
     /** Temperature spread °C */
     TEMP_SPREAD_C: [2, 4, 7] as [number, number, number],
     /** Precip % spread */
@@ -100,6 +100,13 @@ export const FUSION_CONFIG = {
     EXPECTED_NUMERIC_FIELDS: 5,
     /** Flag outliers when spread exceeds this; source must be far from group median. */
     OUTLIER_MIN_SPREAD: { windKmh: 4, gustKmh: 5, precipPct: 18, tempC: 2 },
+    /** Category gates: GOOD needs stronger preference fit + reliable agreement. */
+    GOOD_SUITABILITY_MIN: 0.82,
+    MARGINAL_SUITABILITY_MIN: 0.5,
+    GOOD_RELIABILITY_MIN: 0.55,
+    /** Cap at MARGINAL when any source range in the window reaches these spreads. */
+    HIGH_SPREAD_WIND_KMH: 8,
+    HIGH_SPREAD_GUST_KMH: 10,
 } as const;
 
 function clamp(n: number, lo: number, hi: number): number {
@@ -232,21 +239,24 @@ function softWindKmh(wind: number, minW: number, maxW: number): number {
 }
 
 function softGustKmh(gust: number | null, maxGust: number): number {
-    if (gust == null) return 0.75;
+    // Missing gust data is a real risk for wind sports — do not treat as mostly fine.
+    if (gust == null) return 0.45;
     if (gust <= maxGust) {
-        const t = gust / maxGust;
-        return clamp(1 - 0.35 * t, 0, 1);
+        const t = gust / Math.max(maxGust, 1);
+        // Prefer lighter gusts; still acceptable at the cap, but softer than before.
+        return clamp(1 - 0.55 * t, 0, 1);
     }
-    return clamp(1 - (gust - maxGust) / (maxGust * 0.4 + 8), 0, 1);
+    // Hard falloff once past the user's max gust (was too forgiving with 0.4*max+8).
+    return clamp(1 - (gust - maxGust) / (maxGust * 0.25 + 4), 0, 1);
 }
 
 function softGustDelta(gust: number | null, wind: number, maxDelta: number): number {
-    if (gust == null) return 0.85;
+    if (gust == null) return 0.5;
     const d = gust - wind;
     if (d <= maxDelta) {
-        return clamp(1 - 0.35 * (d / Math.max(maxDelta, 1)), 0, 1);
+        return clamp(1 - 0.55 * (d / Math.max(maxDelta, 1)), 0, 1);
     }
-    return clamp(1 - (d - maxDelta) / (maxDelta + 5), 0, 1);
+    return clamp(1 - (d - maxDelta) / (maxDelta * 0.5 + 2), 0, 1);
 }
 
 function softTempC(temp: number, minT: number, maxT: number): number {
@@ -924,15 +934,57 @@ export function groupFusedHoursIntoWindows(
     return [toRawWindow([seed])];
 }
 
-/** Map blended suitability (preference fit) to window category. */
-export function categoryFromSuitability(suitability: number): "GOOD" | "MARGINAL" | "NO_GO" {
-    if (suitability >= 0.75) return "GOOD";
-    if (suitability >= 0.5) return "MARGINAL";
-    return "NO_GO";
+/** True when models disagree enough that a GOOD rating would be misleading. */
+export function windowHasHighSourceSpread(hours: FusedHour[]): boolean {
+    for (const h of hours) {
+        const winds = h.points.map((p) => p.windSpeed).filter((v): v is number => v != null);
+        const gusts = h.points.map((p) => p.windGust).filter((v): v is number => v != null);
+        if (numericSpread(winds) >= FUSION_CONFIG.HIGH_SPREAD_WIND_KMH) return true;
+        if (numericSpread(gusts) >= FUSION_CONFIG.HIGH_SPREAD_GUST_KMH) return true;
+    }
+    return false;
+}
+
+export type WindowCategory = "GOOD" | "MARGINAL" | "NO_GO";
+
+export interface CategoryOptions {
+    reliability?: number;
+    highSpread?: boolean;
+}
+
+/**
+ * Map preference-fit suitability to category, then harden GOOD with reliability + spread gates.
+ */
+export function categoryFromSuitability(
+    suitability: number,
+    options?: CategoryOptions,
+): WindowCategory {
+    let category: WindowCategory;
+    if (suitability >= FUSION_CONFIG.GOOD_SUITABILITY_MIN) category = "GOOD";
+    else if (suitability >= FUSION_CONFIG.MARGINAL_SUITABILITY_MIN) category = "MARGINAL";
+    else category = "NO_GO";
+
+    if (category === "GOOD") {
+        if (options?.reliability != null && options.reliability < FUSION_CONFIG.GOOD_RELIABILITY_MIN) {
+            category = "MARGINAL";
+        } else if (options?.highSpread) {
+            category = "MARGINAL";
+        }
+    }
+    return category;
+}
+
+export function categoryForWindow(
+    w: Pick<RawFusionWindow, "windowSuitability" | "windowReliability" | "hours">,
+): WindowCategory {
+    return categoryFromSuitability(w.windowSuitability, {
+        reliability: w.windowReliability,
+        highSpread: windowHasHighSourceSpread(w.hours),
+    });
 }
 
 /** @deprecated Use categoryFromSuitability — kept for callers still passing old blended scores. */
-export function categoryFromConfidence(conf: number): "GOOD" | "MARGINAL" | "NO_GO" {
+export function categoryFromConfidence(conf: number): WindowCategory {
     return categoryFromSuitability(conf);
 }
 
