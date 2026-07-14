@@ -15,6 +15,6 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plu
 sudo usermod -aG docker "$USER" || true
 
 echo "==> Done. Log out and SSH back in, then:"
-echo "    cd ~/tempest/api/deploy/oracle   # after cloning the repo"
+echo "    cd ~/gowind/api/deploy/oracle   # after cloning the repo"
 echo "    cp .env.example .env && nano .env"
 echo "    docker compose up -d --build"

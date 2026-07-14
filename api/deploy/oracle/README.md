@@ -97,10 +97,12 @@ Healthy API + Caddy → open `https://api.go-wind.com/auth/me` (expect **401** J
 ## Updates later
 
 ```bash
-cd ~/tempest && git pull
-cd api/deploy/oracle
-docker compose up -d --build
+cd ~/gowind/api/deploy/oracle
+chmod +x deploy.sh   # first time only
+./deploy.sh
 ```
+
+See [`deploy.sh`](deploy.sh) (`./deploy.sh --help` for options).
 
 ## Troubleshooting
 
@@ -112,4 +114,4 @@ docker compose up -d --build
 | Wrong arch | Use Ampere A1 (ARM); `node:22-alpine` is multi-arch |
 | Instance reclaimed | You exceeded Always Free Ampere quota; shrink/delete other A1 VMs |
 
-Helper scripts in this folder: `install-docker.sh`, `docker-compose.yml`, `Caddyfile`, `.env.example`.
+Helper scripts in this folder: `install-docker.sh`, `deploy.sh`, `docker-compose.yml`, `Caddyfile`, `.env.example`.
