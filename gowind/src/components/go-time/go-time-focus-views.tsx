@@ -12,7 +12,7 @@ import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import type { GoTimeWindow } from "@/api/goTimes";
 import type { SavedGoTimeItem } from "@/api/savedGoTimes";
 import { keyForGoTimeWindow } from "@/api/savedGoTimes";
-import { useT, type TranslateParams } from "@/providers/locale-provider";
+import { useT } from "@/providers/locale-provider";
 import { track } from "@/lib/analytics";
 import { AnalyticsEvents } from "@/lib/analytics-events";
 import { cx } from "@/utils/cx";
@@ -26,8 +26,6 @@ type CardSaveProps = {
 
 /** `all` = every saved location; otherwise filter to this `locationId`. */
 export const GO_TIME_ALL_LOCATIONS = "all" as const;
-
-type TFn = (key: string, params?: TranslateParams) => string;
 
 function startOfLocalDay(d: Date): Date {
     const x = new Date(d);
