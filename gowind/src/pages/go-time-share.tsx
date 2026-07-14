@@ -89,7 +89,7 @@ export function GoTimeShare() {
                         <div className="rounded-lg border border-warning-secondary bg-warning-secondary px-4 py-3 text-sm text-warning-primary">
                             {t("goTimeShare.snapshotWarning")}
                         </div>
-                        <GoTimeWindowCard w={share.snapshot.window} allowShare={false} />
+                        <GoTimeWindowCard w={share.snapshot.window} allowShare={false} allowSave={false} />
                         <p className="text-sm text-tertiary">
                             {t("goTimeShare.expires", { date: formatExpiry(share.expiresAt, dateLocale) })}
                         </p>

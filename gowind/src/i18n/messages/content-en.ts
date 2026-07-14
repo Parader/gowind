@@ -64,13 +64,13 @@ export const contentEn = {
                 "Go Time reuses the same window cards everywhere—you just change the slice.",
             next: "Next",
             best: "Best",
-            all: "All",
+            saved: "Saved",
             introSuffix:
                 " in the app line up with the ideas below, with several forecast models blended underneath.",
             focusLines: {
-                next: "Earliest window that still fits your limits, with good slots ahead of marginal when both are still coming up.",
-                best: "Strongest suitability in the next seven days—scoped to one saved spot or your whole list.",
-                all: "Every window in scope, grouped by day and place—when you want the full picture.",
+                next: "Upcoming windows in time order—every rating, earliest first.",
+                best: "Good-rated windows in the next seven days, earliest first.",
+                saved: "Windows you bookmark for later—passed slots stay listed until you remove them.",
             },
             dataSourcesEyebrow: "Data sources",
         },
@@ -392,9 +392,8 @@ export const contentEn = {
             tabs: {
                 next: "Next",
                 best: "Best",
-                all: "All",
+                saved: "Saved",
             },
-            goodOnly: "Good only",
             locationFilterAria: "Location filter",
             allLocations: "All locations",
             scopeAllLocations: "all locations",
@@ -402,37 +401,29 @@ export const contentEn = {
             next: {
                 title: "When can you go next?",
                 description:
-                    "Earliest {{good}} window first; if none, earliest marginal, then other—never a weaker slot ahead of a stronger one.",
-                goodEmphasis: "good",
-                scope: "Scope: {{scope}}.",
-                noteMarginal:
-                    "No “good” slot yet—these are upcoming windows that still fit your limits (marginal).",
-                noteNoGo:
-                    "No good or marginal slot yet—these are the windows we could form from the forecast.",
+                    "Upcoming windows in time order for {{scope}}—good, marginal, and the rest, earliest first.",
                 navLabel: "Browse next windows",
                 emptyTitle: "No upcoming window",
-                emptyGoodOnly:
-                    "No good-rated windows are scheduled ahead. Turn off “Good only” or adjust your setup.",
                 emptyDefault:
                     "No forecast windows ahead match your preferences. Try widening limits or adding locations.",
             },
             best: {
                 title: "What's the best slot this week?",
-                description: "Highest suitability in the next seven days ({{scope}}).",
+                description: "Good-rated windows in the next seven days, earliest first ({{scope}}).",
                 navLabel: "Browse best windows this week",
-                emptyTitle: "No window in the next 7 days",
-                emptyGoodOnly:
-                    "No good-rated windows in range. Try turning off “Good only” or check your limits.",
-                emptyDefault: "Nothing in the next week matches your preferences.",
+                emptyTitle: "No good window in the next 7 days",
+                emptyDefault: "No good-rated windows in the next week. Check Next for marginal slots, or widen your limits.",
             },
-            all: {
-                title: "All windows",
+            saved: {
+                title: "Saved windows",
                 description:
-                    "Full forecast window list for {{scope}}, grouped by day and place—same horizon as Next and Best, with every slot visible.",
-                emptyTitle: "No windows match",
-                emptyGoodOnly:
-                    "Nothing in this scope with “Good only” on. Turn it off or widen your setup.",
-                emptyDefault: "No forecast windows match your current filters.",
+                    "Windows you booked for later ({{scope}}). Slots move to Passed once their start time is over.",
+                upcoming: "Upcoming",
+                passed: "Passed",
+                emptyTitle: "No saved windows",
+                emptyDefault:
+                    "Tap Save on a Go Time card to keep that wind window here for this account.",
+                emptyFiltered: "No saved windows match your current filters.",
             },
             swiper: {
                 prevSlide: "Previous wind window",
@@ -476,6 +467,14 @@ export const contentEn = {
                 text: "GoWind flying window{{atLocation}}: {{when}}",
                 atLocation: " at {{location}}",
             },
+            save: {
+                button: "Save",
+                saved: "Saved",
+                ariaSave: "Save this go-time window",
+                ariaUnsave: "Remove this go-time window from Saved",
+                failed: "Failed",
+            },
+            passedBadge: "Passed",
             score: {
                 tooltipTitle: "How score is calculated",
                 tooltipLine1:

@@ -836,6 +836,20 @@ function ShareIcon(props: { className?: string }) {
     );
 }
 
+function BookmarkIcon(props: { className?: string; filled?: boolean }) {
+    return (
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className={props.className}>
+            <path
+                d="M5.5 3.25h9A1.25 1.25 0 0 1 15.75 4.5v12.1a.6.6 0 0 1-.95.48L10 13.4l-4.8 3.68a.6.6 0 0 1-.95-.48V4.5A1.25 1.25 0 0 1 5.5 3.25Z"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+                fill={props.filled ? "currentColor" : "none"}
+            />
+        </svg>
+    );
+}
+
 function ScoreTooltipDescription({ t }: { t: TFn }) {
     return (
         <>
@@ -850,17 +864,26 @@ export function GoTimeWindowCard({
     showLocation = true,
     showDay = true,
     allowShare = true,
+    allowSave = true,
+    isSaved = false,
+    onToggleSave,
+    showPassedBadge = false,
     compact = false,
 }: {
     w: GoTimeWindow;
     showLocation?: boolean;
     showDay?: boolean;
     allowShare?: boolean;
+    allowSave?: boolean;
+    isSaved?: boolean;
+    onToggleSave?: (window: GoTimeWindow) => Promise<void> | void;
+    showPassedBadge?: boolean;
     compact?: boolean;
 }) {
     const t = useT();
     const { dateLocale } = useLocale();
     const [shareState, setShareState] = useState<"idle" | "sharing" | "shared" | "copied" | "error">("idle");
+    const [saveState, setSaveState] = useState<"idle" | "saving" | "error">("idle");
 
     const scoreTooltipTitle = t("goTime.windowCard.score.tooltipTitle");
     const scoreTooltipDescription = <ScoreTooltipDescription t={t} />;
@@ -953,8 +976,26 @@ export function GoTimeWindowCard({
         }
     };
 
+    const handleToggleSave = async () => {
+        if (!onToggleSave || saveState === "saving") return;
+        setSaveState("saving");
+        try {
+            await onToggleSave(w);
+            setSaveState("idle");
+        } catch (err) {
+            console.error("Go-time save toggle failed:", err);
+            setSaveState("error");
+            window.setTimeout(() => setSaveState("idle"), 2200);
+        }
+    };
+
     return (
-        <div className="flex w-full flex-col gap-2.5 rounded-xl border border-secondary bg-white px-4 py-3.5 shadow-sm dark:bg-primary">
+        <div
+            className={cx(
+                "flex w-full flex-col gap-2.5 rounded-xl border border-secondary bg-white px-4 py-3.5 shadow-sm dark:bg-primary",
+                showPassedBadge && "opacity-80",
+            )}
+        >
             <div className={cx("flex flex-col", hasLocationOrDay ? "gap-1.5" : "gap-1")}>
                 <div
                     className={cx(
@@ -974,6 +1015,11 @@ export function GoTimeWindowCard({
                             <p className={cx("text-sm font-semibold sm:text-base", qualityClass)}>
                                 {categoryLabel(w.category, t)}
                             </p>
+                            {showPassedBadge ? (
+                                <span className="rounded-md bg-secondary_alt px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-tertiary">
+                                    {t("goTime.windowCard.passedBadge")}
+                                </span>
+                            ) : null}
                         </div>
                         {showLocation && locationLine && showDay ? (
                             <p className="mt-0.5 text-xs font-medium text-tertiary">
@@ -982,6 +1028,32 @@ export function GoTimeWindowCard({
                         ) : null}
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
+                        {allowSave && onToggleSave ? (
+                            <button
+                                type="button"
+                                className={cx(
+                                    "inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-semibold outline-hidden transition duration-200 focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-wait disabled:opacity-60",
+                                    isSaved
+                                        ? "text-brand-secondary hover:bg-primary_hover"
+                                        : "text-fg-quaternary hover:bg-primary_hover hover:text-fg-quaternary_hover",
+                                )}
+                                aria-label={
+                                    isSaved
+                                        ? t("goTime.windowCard.save.ariaUnsave")
+                                        : t("goTime.windowCard.save.ariaSave")
+                                }
+                                aria-pressed={isSaved}
+                                disabled={saveState === "saving"}
+                                onClick={handleToggleSave}
+                            >
+                                <BookmarkIcon className="size-4 shrink-0" filled={isSaved} />
+                                <span>
+                                    {isSaved
+                                        ? t("goTime.windowCard.save.saved")
+                                        : t("goTime.windowCard.save.button")}
+                                </span>
+                            </button>
+                        ) : null}
                         {allowShare ? (
                             <button
                                 type="button"
@@ -994,7 +1066,11 @@ export function GoTimeWindowCard({
                                 <span>{t("goTime.windowCard.share.button")}</span>
                             </button>
                         ) : null}
-                        {shareState === "shared" || shareState === "copied" ? (
+                        {saveState === "error" ? (
+                            <span className="text-[10px] font-semibold text-error-primary">
+                                {t("goTime.windowCard.save.failed")}
+                            </span>
+                        ) : shareState === "shared" || shareState === "copied" ? (
                             <span className="text-[10px] font-semibold text-success-primary">
                                 {shareState === "shared"
                                     ? t("goTime.windowCard.share.shared")

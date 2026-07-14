@@ -64,13 +64,13 @@ export const contentFr = {
                 "Go Time réutilise les mêmes cartes de fenêtre partout — vous changez seulement la tranche.",
             next: "Prochain",
             best: "Meilleur",
-            all: "Tout",
+            saved: "Enregistrés",
             introSuffix:
                 " dans l'appli correspondent aux idées ci-dessous, avec plusieurs modèles de prévision fusionnés en arrière-plan.",
             focusLines: {
-                next: "La fenêtre la plus tôt qui respecte encore vos limites, avec les créneaux bons avant les marginaux quand les deux sont à venir.",
-                best: "La meilleure adéquation dans les sept prochains jours — pour un lieu enregistré ou toute votre liste.",
-                all: "Chaque fenêtre dans la portée, regroupée par jour et par lieu — quand vous voulez la vue d'ensemble.",
+                next: "Fenêtres à venir dans l’ordre du temps — toutes les notes, les plus tôt d’abord.",
+                best: "Fenêtres classées bonnes dans les sept prochains jours, les plus tôt d’abord.",
+                saved: "Les fenêtres que vous mettez de côté — les créneaux passés restent listés jusqu’à ce que vous les retiriez.",
             },
             dataSourcesEyebrow: "Sources de données",
         },
@@ -392,9 +392,8 @@ export const contentFr = {
             tabs: {
                 next: "Prochain",
                 best: "Meilleur",
-                all: "Tout",
+                saved: "Enregistrés",
             },
-            goodOnly: "Bon seulement",
             locationFilterAria: "Filtre de lieu",
             allLocations: "Tous les lieux",
             scopeAllLocations: "tous les lieux",
@@ -402,37 +401,31 @@ export const contentFr = {
             next: {
                 title: "Quand pouvez-vous sortir ensuite?",
                 description:
-                    "La fenêtre {{good}} la plus tôt d'abord; s'il n'y en a pas, la marginale la plus tôt, puis les autres — jamais un créneau plus faible devant un plus fort.",
-                goodEmphasis: "bonne",
-                scope: "Portée : {{scope}}.",
-                noteMarginal:
-                    "Pas encore de créneau « bon » — voici les fenêtres à venir qui respectent encore vos limites (marginales).",
-                noteNoGo:
-                    "Pas encore de créneau bon ou marginal — voici les fenêtres que nous avons pu former à partir de la prévision.",
+                    "Fenêtres à venir dans l’ordre chronologique pour {{scope}} — bonnes, marginales et les autres, les plus tôt d’abord.",
                 navLabel: "Parcourir les prochaines fenêtres",
                 emptyTitle: "Aucune fenêtre à venir",
-                emptyGoodOnly:
-                    "Aucune fenêtre classée bonne n'est prévue. Désactivez « Bon seulement » ou ajustez votre configuration.",
                 emptyDefault:
                     "Aucune fenêtre de prévision ne correspond à vos préférences. Essayez d'élargir vos limites ou d'ajouter des lieux.",
             },
             best: {
                 title: "Quel est le meilleur créneau cette semaine?",
-                description: "Meilleure adéquation dans les sept prochains jours ({{scope}}).",
-                navLabel: "Parcourir les meilleures fenêtres de la semaine",
-                emptyTitle: "Aucune fenêtre dans les 7 prochains jours",
-                emptyGoodOnly:
-                    "Aucune fenêtre classée bonne dans la plage. Essayez de désactiver « Bon seulement » ou vérifiez vos limites.",
-                emptyDefault: "Rien dans la semaine à venir ne correspond à vos préférences.",
-            },
-            all: {
-                title: "Toutes les fenêtres",
                 description:
-                    "Liste complète des fenêtres de prévision pour {{scope}}, regroupée par jour et par lieu — même horizon que Prochain et Meilleur, avec chaque créneau visible.",
-                emptyTitle: "Aucune fenêtre ne correspond",
-                emptyGoodOnly:
-                    "Rien dans cette portée avec « Bon seulement » activé. Désactivez-le ou élargissez votre configuration.",
-                emptyDefault: "Aucune fenêtre de prévision ne correspond à vos filtres actuels.",
+                    "Fenêtres classées bonnes dans les sept prochains jours, les plus tôt d’abord ({{scope}}).",
+                navLabel: "Parcourir les meilleures fenêtres de la semaine",
+                emptyTitle: "Aucune bonne fenêtre dans les 7 prochains jours",
+                emptyDefault:
+                    "Aucune fenêtre classée bonne cette semaine. Voyez Prochain pour les créneaux marginaux, ou élargissez vos limites.",
+            },
+            saved: {
+                title: "Fenêtres enregistrées",
+                description:
+                    "Les fenêtres que vous avez mises de côté ({{scope}}). Les créneaux passent à Passé une fois l’heure de début dépassée.",
+                upcoming: "À venir",
+                passed: "Passé",
+                emptyTitle: "Aucune fenêtre enregistrée",
+                emptyDefault:
+                    "Appuyez sur Enregistrer sur une carte Go Time pour la conserver ici pour ce compte.",
+                emptyFiltered: "Aucune fenêtre enregistrée ne correspond à vos filtres actuels.",
             },
             swiper: {
                 prevSlide: "Fenêtre de vent précédente",
@@ -476,6 +469,14 @@ export const contentFr = {
                 text: "Fenêtre de vol GoWind{{atLocation}} : {{when}}",
                 atLocation: " à {{location}}",
             },
+            save: {
+                button: "Enregistrer",
+                saved: "Enregistré",
+                ariaSave: "Enregistrer cette fenêtre Go Time",
+                ariaUnsave: "Retirer cette fenêtre des Enregistrés",
+                failed: "Échec",
+            },
+            passedBadge: "Passé",
             score: {
                 tooltipTitle: "Comment le score est calculé",
                 tooltipLine1:

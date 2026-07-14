@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Navigate, useSearchParams } from "react-router";
 import { ArrowRight, ChevronDown, Heart, Map01, Sliders01, Stars01 } from "@untitledui/icons";
 import "@sneas/telephone/iphone-16-max.js";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import { Button } from "@/components/base/buttons/button";
 import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import { getLandingDemoGoTimeWindows, LANDING_DEMO_ROTATE_MS } from "@/data/landing-demo-go-time";
@@ -54,7 +56,7 @@ const dataSourceKeys = [
 const whyGoWindFocusLineKeys = [
     "landing.different.focusLines.next",
     "landing.different.focusLines.best",
-    "landing.different.focusLines.all",
+    "landing.different.focusLines.saved",
 ] as const;
 
 const REVEAL_BASE_DELAY = 0.12;
@@ -96,7 +98,9 @@ function Reveal({
 }
 
 export const Landing03 = () => {
-    const { user } = useAuth();
+    const { user, isLoading } = useAuth();
+    const [searchParams] = useSearchParams();
+    const preferMarketingHome = searchParams.has("home");
     const t = useT();
     const prefersReducedMotion = useReducedMotion();
     const heroRef = useRef<HTMLElement>(null);
@@ -124,11 +128,24 @@ export const Landing03 = () => {
 
     const donateUrl =
         import.meta.env.VITE_STRIPE_DONATE_URL?.trim() || import.meta.env.VITE_DONATE_URL?.trim();
-    const loggedIn = Boolean(user);
 
-    const trackLandingCta = (cta: "sign_up" | "log_in" | "go_time", section: string) => {
+    const trackLandingCta = (cta: "sign_up" | "log_in", section: string) => {
         track(AnalyticsEvents.landingCtaClicked, { cta, section });
     };
+
+    // Bare `/` (e.g. typing go-wind.com) → Go Time when logged in.
+    // Logo / Home nav use `/?home=1` so you can open the marketing page on purpose.
+    if (!preferMarketingHome && isLoading) {
+        return (
+            <main className="flex flex-1 items-center justify-center py-24">
+                <LoadingIndicator type="dot-circle" size="lg" label={t("common.actions.loading")} />
+            </main>
+        );
+    }
+
+    if (!preferMarketingHome && user) {
+        return <Navigate to="/go-time" replace />;
+    }
 
     return (
         <main className="flex-1">
@@ -167,39 +184,24 @@ export const Landing03 = () => {
                                     {t("landing.hero.subtitle")}
                                 </p>
                                 <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                                    {loggedIn ? (
-                                        <Button
-                                            size="lg"
-                                            color="primary"
-                                            className="rounded-full"
-                                            iconTrailing={ArrowRight}
-                                            href="/go-time"
-                                            onClick={() => trackLandingCta("go_time", "hero")}
-                                        >
-                                            {t("landing.hero.checkGoTimes")}
-                                        </Button>
-                                    ) : (
-                                        <>
-                                            <Button
-                                                size="lg"
-                                                color="primary"
-                                                className="rounded-full"
-                                                href="/signup"
-                                                onClick={() => trackLandingCta("sign_up", "hero")}
-                                            >
-                                                {t("landing.hero.signUp")}
-                                            </Button>
-                                            <Button
-                                                size="lg"
-                                                color="secondary"
-                                                className="rounded-full"
-                                                href="/login"
-                                                onClick={() => trackLandingCta("log_in", "hero")}
-                                            >
-                                                {t("landing.hero.logIn")}
-                                            </Button>
-                                        </>
-                                    )}
+                                    <Button
+                                        size="lg"
+                                        color="primary"
+                                        className="rounded-full"
+                                        href="/signup"
+                                        onClick={() => trackLandingCta("sign_up", "hero")}
+                                    >
+                                        {t("landing.hero.signUp")}
+                                    </Button>
+                                    <Button
+                                        size="lg"
+                                        color="secondary"
+                                        className="rounded-full"
+                                        href="/login"
+                                        onClick={() => trackLandingCta("log_in", "hero")}
+                                    >
+                                        {t("landing.hero.logIn")}
+                                    </Button>
                                 </div>
                                 <p className="mt-6 text-sm text-quaternary">
                                     {t("landing.hero.tagline")}
@@ -254,7 +256,13 @@ export const Landing03 = () => {
                                             {t("landing.value.demoUrl")}
                                         </div>
                                         <div className="mt-5">
-                                        <GoTimeWindowCard key={demoGoTime.id} w={demoGoTime} allowShare={false} compact />
+                                        <GoTimeWindowCard
+                                            key={demoGoTime.id}
+                                            w={demoGoTime}
+                                            allowShare={false}
+                                            allowSave={false}
+                                            compact
+                                        />
                                         </div>
                                     </div>
                                 </iphone-16-max>
@@ -361,8 +369,8 @@ export const Landing03 = () => {
                             <p className="mt-4 text-md leading-relaxed text-tertiary md:text-lg">
                                 {t("landing.different.intro")}{" "}
                                 <span className="font-medium text-secondary">{t("landing.different.next")}</span>,{" "}
-                                <span className="font-medium text-secondary">{t("landing.different.best")}</span>, and{" "}
-                                <span className="font-medium text-secondary">{t("landing.different.all")}</span>{" "}
+                                <span className="font-medium text-secondary">{t("landing.different.best")}</span>,{" "}
+                                <span className="font-medium text-secondary">{t("landing.different.saved")}</span>{" "}
                                 {t("landing.different.introSuffix")}
                             </p>
                         </Reveal>
@@ -461,12 +469,10 @@ export const Landing03 = () => {
                                 color="primary"
                                 className="rounded-full shrink-0"
                                 iconTrailing={ArrowRight}
-                                href={loggedIn ? "/go-time" : "/signup"}
-                                onClick={() =>
-                                    trackLandingCta(loggedIn ? "go_time" : "sign_up", "final_cta")
-                                }
+                                href="/signup"
+                                onClick={() => trackLandingCta("sign_up", "final_cta")}
                             >
-                                {loggedIn ? t("landing.finalCta.checkGoTimes") : t("landing.finalCta.getStarted")}
+                                {t("landing.finalCta.getStarted")}
                             </Button>
                         </Reveal>
                     </div>

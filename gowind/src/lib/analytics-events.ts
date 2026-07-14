@@ -17,9 +17,10 @@ export const AnalyticsEvents = {
 
     goTimeLoaded: "go_time_loaded",
     goTimeFocusViewChanged: "go_time_focus_view_changed",
-    goTimeGoodOnlyToggled: "go_time_good_only_toggled",
     goTimeLocationFilterChanged: "go_time_location_filter_changed",
     goTimeWindowShared: "go_time_window_shared",
+    goTimeWindowSaved: "go_time_window_saved",
+    goTimeWindowUnsaved: "go_time_window_unsaved",
     goTimeShareViewed: "go_time_share_viewed",
 
     locationAdded: "location_added",

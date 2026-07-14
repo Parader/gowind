@@ -7,16 +7,22 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { NativeSelect } from "@/components/base/select/select-native";
-import { Toggle } from "@/components/base/toggle/toggle";
 import { Tabs } from "@/components/application/tabs/tabs";
 import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import type { GoTimeWindow } from "@/api/goTimes";
-import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
+import type { SavedGoTimeItem } from "@/api/savedGoTimes";
+import { keyForGoTimeWindow } from "@/api/savedGoTimes";
+import { useT, type TranslateParams } from "@/providers/locale-provider";
 import { track } from "@/lib/analytics";
 import { AnalyticsEvents } from "@/lib/analytics-events";
 import { cx } from "@/utils/cx";
 
-export type GoTimeFocusView = "next" | "best" | "all";
+export type GoTimeFocusView = "next" | "best" | "saved";
+
+type CardSaveProps = {
+    isWindowSaved: (w: GoTimeWindow) => boolean;
+    onToggleSave: (w: GoTimeWindow) => Promise<void>;
+};
 
 /** `all` = every saved location; otherwise filter to this `locationId`. */
 export const GO_TIME_ALL_LOCATIONS = "all" as const;
@@ -35,29 +41,12 @@ function addDaysLocal(d: Date, n: number): Date {
     return x;
 }
 
-function toLocalDateKey(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
-}
-
-function qualityScore(w: GoTimeWindow): number {
-    if (w.suitabilityScore != null) return w.suitabilityScore;
-    return w.averageScore / 100;
-}
-
 function displayStart(w: GoTimeWindow): string {
     return w.displayStartTime ?? w.startTime;
 }
 
 function displayEnd(w: GoTimeWindow): string {
     return w.displayEndTime ?? w.endTime;
-}
-
-function applyGoodOnly(windows: GoTimeWindow[], goodOnly: boolean): GoTimeWindow[] {
-    if (!goodOnly) return windows;
-    return windows.filter((w) => w.category === "GOOD");
 }
 
 function applyLocationFilter(windows: GoTimeWindow[], locationId: string): GoTimeWindow[] {
@@ -72,13 +61,7 @@ function isWindowInNextSevenDays(w: GoTimeWindow, now: Date): boolean {
     return ws >= start && ws < end;
 }
 
-function compareByQualityThenTime(a: GoTimeWindow, b: GoTimeWindow): number {
-    const q = qualityScore(b) - qualityScore(a);
-    if (Math.abs(q) > 1e-9) return q;
-    return new Date(displayStart(a)).getTime() - new Date(displayStart(b)).getTime();
-}
-
-/** Clock order for the same calendar day and location (not suitability). */
+/** Clock order (not suitability). */
 function compareByStartTime(a: GoTimeWindow, b: GoTimeWindow): number {
     const ta = new Date(displayStart(a)).getTime();
     const tb = new Date(displayStart(b)).getTime();
@@ -89,100 +72,37 @@ function compareByStartTime(a: GoTimeWindow, b: GoTimeWindow): number {
     return a.id.localeCompare(b.id);
 }
 
-/**
- * All “next” candidates in the first non-empty tier (good → marginal → no-go), each tier in time order.
- */
-function buildNextCandidates(futureSortedAsc: GoTimeWindow[]): GoTimeWindow[] {
-    if (futureSortedAsc.length === 0) return [];
-    const good = futureSortedAsc.filter((w) => w.category === "GOOD");
-    if (good.length > 0) return good;
-    const marginal = futureSortedAsc.filter((w) => w.category === "MARGINAL");
-    if (marginal.length > 0) return marginal;
-    const noGo = futureSortedAsc.filter((w) => w.category === "NO_GO");
-    return noGo.length > 0 ? noGo : [...futureSortedAsc];
-}
-
-function getTimeFrameLabel(dateKey: string, now: Date, t: TFn, dateLocale: string): string {
-    const todayKey = toLocalDateKey(now);
-    const tomorrow = addDaysLocal(startOfLocalDay(now), 1);
-    const tomorrowKey = toLocalDateKey(tomorrow);
-
-    if (dateKey === todayKey) return t("common.dates.today");
-    if (dateKey === tomorrowKey) return t("common.dates.tomorrow");
-    const dayStart = new Date(dateKey + "T12:00:00");
-    return new Intl.DateTimeFormat(dateLocale, {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-    }).format(dayStart);
-}
-
-/** Day → Location → Windows for the full “All” view (chronological). */
-function groupByDayThenLocation(
-    windows: GoTimeWindow[],
-    now: Date,
-    t: TFn,
-    dateLocale: string,
-    defaultLocation: string,
-): Array<{
-    dateKey: string;
-    label: string;
-    locations: Array<{ locationId: string; locationName: string; windows: GoTimeWindow[] }>;
-}> {
-    const byDate = new Map<string, Map<string, GoTimeWindow[]>>();
-    for (const w of windows) {
-        const dateKey = toLocalDateKey(new Date(displayStart(w)));
-        let byLoc = byDate.get(dateKey);
-        if (!byLoc) {
-            byLoc = new Map();
-            byDate.set(dateKey, byLoc);
-        }
-        const list = byLoc.get(w.locationId) ?? [];
-        list.push(w);
-        byLoc.set(w.locationId, list);
-    }
-    const dateKeys = [...byDate.keys()].sort();
-    return dateKeys.map((dateKey) => {
-        const byLoc = byDate.get(dateKey)!;
-        const locations = [...byLoc.entries()].map(([locationId, locWindows]) => ({
-            locationId,
-            locationName: locWindows[0]?.locationName ?? defaultLocation,
-            windows: [...locWindows].sort(compareByStartTime),
-        }));
-        locations.sort((a, b) =>
-            a.locationName.localeCompare(b.locationName, undefined, { sensitivity: "base" }),
-        );
-        return {
-            dateKey,
-            label: getTimeFrameLabel(dateKey, now, t, dateLocale),
-            locations,
-        };
-    });
-}
-
 interface GoTimeFocusViewsProps {
     windows: GoTimeWindow[];
     view: GoTimeFocusView;
     onViewChange: (v: GoTimeFocusView) => void;
-    goodOnly: boolean;
-    onGoodOnlyChange: (v: boolean) => void;
     locationFilterId: string;
     onLocationFilterChange: (id: string) => void;
+    savedItems: SavedGoTimeItem[];
+    onToggleSave: (w: GoTimeWindow) => Promise<void>;
 }
 
 export function GoTimeFocusViews({
     windows,
     view,
     onViewChange,
-    goodOnly,
-    onGoodOnlyChange,
     locationFilterId,
     onLocationFilterChange,
+    savedItems,
+    onToggleSave,
 }: GoTimeFocusViewsProps) {
     const t = useT();
-    const { dateLocale } = useLocale();
     const now = useMemo(() => new Date(), []);
     const defaultLocation = t("goTime.page.defaultLocation");
+
+    const savedKeySet = useMemo(() => new Set(savedItems.map((item) => item.key)), [savedItems]);
+    const cardSaveProps: CardSaveProps = useMemo(
+        () => ({
+            isWindowSaved: (w) => savedKeySet.has(keyForGoTimeWindow(w)),
+            onToggleSave,
+        }),
+        [onToggleSave, savedKeySet],
+    );
 
     const locationOptions = useMemo(() => {
         const map = new Map<string, string>();
@@ -191,10 +111,16 @@ export function GoTimeFocusViews({
                 map.set(w.locationId, (w.locationName ?? "").trim() || defaultLocation);
             }
         }
+        for (const item of savedItems) {
+            if (!map.has(item.locationId)) {
+                const name = (item.window.locationName ?? "").trim() || defaultLocation;
+                map.set(item.locationId, name);
+            }
+        }
         return [...map.entries()]
             .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
             .map(([id, name]) => ({ value: id, label: name }));
-    }, [windows, defaultLocation]);
+    }, [windows, savedItems, defaultLocation]);
 
     useEffect(() => {
         if (
@@ -211,10 +137,10 @@ export function GoTimeFocusViews({
         [windows],
     );
 
-    const filtered = useMemo(() => {
-        const g = applyGoodOnly(windowsChronological, goodOnly);
-        return applyLocationFilter(g, locationFilterId);
-    }, [windowsChronological, goodOnly, locationFilterId]);
+    const filtered = useMemo(
+        () => applyLocationFilter(windowsChronological, locationFilterId),
+        [windowsChronological, locationFilterId],
+    );
 
     const locationScopeLabel =
         locationFilterId === GO_TIME_ALL_LOCATIONS
@@ -222,46 +148,36 @@ export function GoTimeFocusViews({
             : locationOptions.find((o) => o.value === locationFilterId)?.label ??
               t("goTime.focusViews.scopeThisLocation");
 
-    const { nextCandidates, nextWindowNote } = useMemo(() => {
-        const future = [...filtered]
-            .filter((w) => new Date(displayStart(w)) >= now)
-            .sort(compareByStartTime);
-        const candidates = buildNextCandidates(future);
-        if (candidates.length === 0) {
-            return { nextCandidates: [] as GoTimeWindow[], nextWindowNote: null as string | null };
-        }
-        const hasGood = future.some((w) => w.category === "GOOD");
-        if (hasGood) {
-            return { nextCandidates: candidates, nextWindowNote: null as string | null };
-        }
-        const hasMarginal = future.some((w) => w.category === "MARGINAL");
-        if (hasMarginal) {
-            return {
-                nextCandidates: candidates,
-                nextWindowNote: t("goTime.focusViews.next.noteMarginal"),
-            };
-        }
-        return {
-            nextCandidates: candidates,
-            nextWindowNote: t("goTime.focusViews.next.noteNoGo"),
-        };
-    }, [filtered, now, t]);
-
-    const bestCandidates = useMemo(() => {
-        const pool = filtered.filter((w) => isWindowInNextSevenDays(w, now));
-        if (pool.length === 0) return [];
-        return [...pool].sort(compareByQualityThenTime);
-    }, [filtered, now]);
-
-    const allByDayAndLocation = useMemo(
-        () => groupByDayThenLocation(filtered, now, t, dateLocale, defaultLocation),
-        [filtered, now, t, dateLocale, defaultLocation],
+    /** Upcoming windows in clock order — every category (good, marginal, no-go). */
+    const nextCandidates = useMemo(
+        () =>
+            [...filtered]
+                .filter((w) => new Date(displayStart(w)) >= now)
+                .sort(compareByStartTime),
+        [filtered, now],
     );
 
-    const goodMarker = "\uE000";
-    const nextDescriptionParts = t("goTime.focusViews.next.description", {
-        good: goodMarker,
-    }).split(goodMarker);
+    const bestCandidates = useMemo(() => {
+        const pool = filtered.filter(
+            (w) => w.category === "GOOD" && isWindowInNextSevenDays(w, now),
+        );
+        if (pool.length === 0) return [];
+        return [...pool].sort(compareByStartTime);
+    }, [filtered, now]);
+
+    const savedFiltered = useMemo(() => {
+        if (locationFilterId === GO_TIME_ALL_LOCATIONS) return savedItems;
+        return savedItems.filter((item) => item.locationId === locationFilterId);
+    }, [savedItems, locationFilterId]);
+
+    const savedUpcoming = useMemo(
+        () => savedFiltered.filter((item) => item.status === "upcoming"),
+        [savedFiltered],
+    );
+    const savedPassed = useMemo(
+        () => savedFiltered.filter((item) => item.status === "passed"),
+        [savedFiltered],
+    );
 
     return (
         <div className="space-y-4 md:space-y-6">
@@ -273,31 +189,18 @@ export function GoTimeFocusViews({
                     track(AnalyticsEvents.goTimeFocusViewChanged, { view: next });
                 }}
             >
-                <div className="flex flex-col gap-2 md:gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-x-4 lg:gap-y-2">
-                    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 lg:min-w-0 lg:flex-1">
-                        <Tabs.List
-                            type="button-minimal"
-                            size="sm"
-                            fullWidth
-                            className="min-w-0 opacity-95 sm:min-w-0 sm:max-w-[min(100%,42rem)] sm:flex-1"
-                        >
-                            <Tabs.Item id="next" label={t("goTime.focusViews.tabs.next")} />
-                            <Tabs.Item id="best" label={t("goTime.focusViews.tabs.best")} />
-                            <Tabs.Item id="all" label={t("goTime.focusViews.tabs.all")} />
-                        </Tabs.List>
-                        <Toggle
-                            size="sm"
-                            slim
-                            label={t("goTime.focusViews.goodOnly")}
-                            isSelected={goodOnly}
-                            onChange={(v) => {
-                                onGoodOnlyChange(v);
-                                track(AnalyticsEvents.goTimeGoodOnlyToggled, { enabled: v });
-                            }}
-                            className="shrink-0 [&_p]:text-xs [&_p]:font-normal [&_p]:text-tertiary"
-                        />
-                    </div>
-                    <div className="w-full min-w-0 sm:w-auto">
+                <div className="flex min-w-0 max-w-full flex-col gap-2 md:gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-x-4 lg:gap-y-2">
+                    <Tabs.List
+                        type="button-minimal"
+                        size="sm"
+                        fullWidth
+                        className="min-w-0 opacity-95 sm:min-w-0 sm:max-w-[min(100%,36rem)] sm:flex-1"
+                    >
+                        <Tabs.Item id="next" label={t("goTime.focusViews.tabs.next")} />
+                        <Tabs.Item id="best" label={t("goTime.focusViews.tabs.best")} />
+                        <Tabs.Item id="saved" label={t("goTime.focusViews.tabs.saved")} />
+                    </Tabs.List>
+                    <div className="w-full min-w-0 max-w-full sm:w-48 sm:shrink-0 lg:max-w-[16rem]">
                         <NativeSelect
                             aria-label={t("goTime.focusViews.locationFilterAria")}
                             value={locationFilterId}
@@ -312,8 +215,8 @@ export function GoTimeFocusViews({
                                 { value: GO_TIME_ALL_LOCATIONS, label: t("goTime.focusViews.allLocations") },
                                 ...locationOptions.map((o) => ({ value: o.value, label: o.label })),
                             ]}
-                            className="w-full min-w-[10rem] sm:w-48"
-                            selectClassName="pr-9 py-2 text-sm font-normal shadow-none ring-secondary/60"
+                            className="w-full max-w-full"
+                            selectClassName="w-full max-w-full truncate pr-9 py-2 text-sm font-normal shadow-none ring-secondary/60"
                         />
                     </div>
                 </div>
@@ -324,35 +227,20 @@ export function GoTimeFocusViews({
                                     {t("goTime.focusViews.next.title")}
                                 </h2>
                                 <p className="mt-1 text-sm text-tertiary">
-                                    {nextDescriptionParts[0]}
-                                    <span className="font-medium text-secondary">
-                                        {t("goTime.focusViews.next.goodEmphasis")}
-                                    </span>
-                                    {nextDescriptionParts[1]}{" "}
-                                    <span className="text-tertiary">
-                                        {t("goTime.focusViews.next.scope", { scope: locationScopeLabel })}
-                                    </span>
+                                    {t("goTime.focusViews.next.description", { scope: locationScopeLabel })}
                                 </p>
                             </header>
-                            {nextWindowNote ? (
-                                <p className="rounded-lg border border-amber-500/30 bg-amber-50/80 px-3 py-2 text-sm text-amber-950 dark:border-amber-500/25 dark:bg-amber-950/30 dark:text-amber-100/95">
-                                    {nextWindowNote}
-                                </p>
-                            ) : null}
                             {nextCandidates.length > 0 ? (
                                 <FocusWindowSwiper
-                                    key={`next-${locationFilterId}-${goodOnly}-${nextCandidates.map((w) => w.id).join("|")}`}
+                                    key={`next-${locationFilterId}-${nextCandidates.map((w) => w.id).join("|")}`}
                                     windows={nextCandidates}
                                     navLabel={t("goTime.focusViews.next.navLabel")}
+                                    cardSaveProps={cardSaveProps}
                                 />
                             ) : (
                                 <EmptyFocus
                                     title={t("goTime.focusViews.next.emptyTitle")}
-                                    body={
-                                        goodOnly
-                                            ? t("goTime.focusViews.next.emptyGoodOnly")
-                                            : t("goTime.focusViews.next.emptyDefault")
-                                    }
+                                    body={t("goTime.focusViews.next.emptyDefault")}
                                 />
                             )}
                         </section>
@@ -369,70 +257,75 @@ export function GoTimeFocusViews({
                             </header>
                             {bestCandidates.length > 0 ? (
                                 <FocusWindowSwiper
-                                    key={`best-${locationFilterId}-${goodOnly}-${bestCandidates.map((w) => w.id).join("|")}`}
+                                    key={`best-${locationFilterId}-${bestCandidates.map((w) => w.id).join("|")}`}
                                     windows={bestCandidates}
                                     navLabel={t("goTime.focusViews.best.navLabel")}
+                                    cardSaveProps={cardSaveProps}
                                 />
                             ) : (
                                 <EmptyFocus
                                     title={t("goTime.focusViews.best.emptyTitle")}
-                                    body={
-                                        goodOnly
-                                            ? t("goTime.focusViews.best.emptyGoodOnly")
-                                            : t("goTime.focusViews.best.emptyDefault")
-                                    }
+                                    body={t("goTime.focusViews.best.emptyDefault")}
                                 />
                             )}
                         </section>
                     </Tabs.Panel>
-                    <Tabs.Panel id="all" className="mt-3 outline-none focus:outline-none md:mt-8">
-                        <section aria-label={t("goTime.focusViews.all.title")} className="space-y-3 md:space-y-4">
+                    <Tabs.Panel id="saved" className="mt-3 outline-none focus:outline-none md:mt-8">
+                        <section aria-label={t("goTime.focusViews.saved.title")} className="space-y-3 md:space-y-4">
                             <header className="max-md:hidden">
-                                <h2 id="focus-all-heading" className="text-lg font-semibold text-primary">
-                                    {t("goTime.focusViews.all.title")}
+                                <h2 id="focus-saved-heading" className="text-lg font-semibold text-primary">
+                                    {t("goTime.focusViews.saved.title")}
                                 </h2>
                                 <p className="mt-1 text-sm text-tertiary">
-                                    {t("goTime.focusViews.all.description", { scope: locationScopeLabel })}
+                                    {t("goTime.focusViews.saved.description", { scope: locationScopeLabel })}
                                 </p>
                             </header>
-                            {allByDayAndLocation.length === 0 ? (
+                            {savedFiltered.length === 0 ? (
                                 <EmptyFocus
-                                    title={t("goTime.focusViews.all.emptyTitle")}
+                                    title={t("goTime.focusViews.saved.emptyTitle")}
                                     body={
-                                        goodOnly
-                                            ? t("goTime.focusViews.all.emptyGoodOnly")
-                                            : t("goTime.focusViews.all.emptyDefault")
+                                        savedItems.length === 0
+                                            ? t("goTime.focusViews.saved.emptyDefault")
+                                            : t("goTime.focusViews.saved.emptyFiltered")
                                     }
                                 />
                             ) : (
-                                <div className="space-y-10">
-                                    {allByDayAndLocation.map((group) => (
-                                        <section key={group.dateKey}>
-                                            <h3 className="mb-4 text-base font-semibold text-primary">{group.label}</h3>
-                                            <div className="space-y-6">
-                                                {group.locations.map((loc) => (
-                                                    <div
-                                                        key={`${group.dateKey}-${loc.locationId}`}
-                                                        className="rounded-lg border border-secondary/60 bg-secondary_alt/20 p-4"
-                                                    >
-                                                        <h4 className="mb-3 text-sm font-semibold text-secondary">
-                                                            {loc.locationName}
-                                                        </h4>
-                                                        <div className="flex flex-col gap-3">
-                                                            {loc.windows.map((w) => (
-                                                                <GoTimeWindowCard
-                                                                    key={w.id}
-                                                                    w={w}
-                                                                    showLocation={false}
-                                                                    showDay={false}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    </div>
+                                <div className="space-y-8">
+                                    {savedUpcoming.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <h3 className="text-sm font-semibold text-secondary">
+                                                {t("goTime.focusViews.saved.upcoming")}
+                                            </h3>
+                                            <div className="flex flex-col gap-3">
+                                                {savedUpcoming.map((item) => (
+                                                    <GoTimeWindowCard
+                                                        key={item.key}
+                                                        w={item.window}
+                                                        isSaved
+                                                        onToggleSave={cardSaveProps.onToggleSave}
+                                                    />
                                                 ))}
                                             </div>
-                                        </section>
-                                    ))}
+                                        </div>
+                                    ) : null}
+                                    {savedPassed.length > 0 ? (
+                                        <div className="space-y-3">
+                                            <h3 className="text-sm font-semibold text-secondary">
+                                                {t("goTime.focusViews.saved.passed")}
+                                            </h3>
+                                            <div className="flex flex-col gap-3">
+                                                {savedPassed.map((item) => (
+                                                    <GoTimeWindowCard
+                                                        key={item.key}
+                                                        w={item.window}
+                                                        isSaved
+                                                        showPassedBadge
+                                                        onToggleSave={cardSaveProps.onToggleSave}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </div>
                             )}
                         </section>
@@ -442,7 +335,15 @@ export function GoTimeFocusViews({
     );
 }
 
-function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; navLabel: string }) {
+function FocusWindowSwiper({
+    windows,
+    navLabel,
+    cardSaveProps,
+}: {
+    windows: GoTimeWindow[];
+    navLabel: string;
+    cardSaveProps: CardSaveProps;
+}) {
     const t = useT();
     const [swiper, setSwiper] = useState<SwiperInstance | null>(null);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -487,7 +388,11 @@ function FocusWindowSwiper({ windows, navLabel }: { windows: GoTimeWindow[]; nav
                 >
                     {windows.map((w) => (
                         <SwiperSlide key={w.id} className="!h-auto !w-full">
-                            <GoTimeWindowCard w={w} />
+                            <GoTimeWindowCard
+                                w={w}
+                                isSaved={cardSaveProps.isWindowSaved(w)}
+                                onToggleSave={cardSaveProps.onToggleSave}
+                            />
                         </SwiperSlide>
                     ))}
                 </Swiper>

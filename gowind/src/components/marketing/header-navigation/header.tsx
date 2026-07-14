@@ -10,6 +10,7 @@ import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import { GoWindLogoMinimal } from "@/components/foundations/logo/gowind-logo-minimal";
 import { HeaderMobileMenu } from "@/components/marketing/header-navigation/header-mobile-menu";
 import { HeaderProfileMenu } from "@/components/marketing/header-navigation/header-profile-menu";
+import { MARKETING_HOME_PATH } from "@/lib/paths";
 import { getCachedAuthUser, useAuth } from "@/providers/auth-provider";
 import { useLocale } from "@/providers/locale-provider";
 import { useSetup } from "@/providers/setup-provider";
@@ -23,7 +24,7 @@ type HeaderNavItem = {
 };
 
 const publicNavHrefs = [
-    { href: "/" },
+    { href: MARKETING_HOME_PATH },
     { href: "/about" },
 ] as const;
 
@@ -130,6 +131,7 @@ function useHeaderContrast(isFloating: boolean | undefined, headerRef: RefObject
 
 const navLabelKey: Record<string, string> = {
     "/": "common.nav.home",
+    [MARKETING_HOME_PATH]: "common.nav.home",
     "/about": "common.nav.about",
     "/go-time": "common.nav.goTime",
     "/locations": "common.nav.locations",
@@ -227,7 +229,7 @@ export const Header = ({ items, isFullWidth, isFloating, className }: HeaderProp
                     )}
                 >
                     <div className="flex flex-1 items-center gap-5">
-                        <Link to="/" className="flex shrink-0">
+                        <Link to={MARKETING_HOME_PATH} className="flex shrink-0">
                             <GoWindLogo variant={lightContent ? "light" : "dark"} className="h-8 md:max-lg:hidden" />
                             <GoWindLogoMinimal variant={lightContent ? "light" : "dark"} className="hidden h-8 md:inline-block lg:hidden" />
                         </Link>

@@ -3,13 +3,11 @@ import { GO_TIME_ALL_LOCATIONS } from "@/components/go-time/go-time-focus-views"
 
 export interface GoTimeViewPrefs {
     focusView: GoTimeFocusView;
-    goodOnly: boolean;
     locationFilterId: string;
 }
 
 const DEFAULT_PREFS: GoTimeViewPrefs = {
     focusView: "next",
-    goodOnly: true,
     locationFilterId: GO_TIME_ALL_LOCATIONS,
 };
 
@@ -22,14 +20,15 @@ export function readGoTimeViewPrefs(userId: string | undefined | null): GoTimeVi
     try {
         const raw = localStorage.getItem(storageKey(userId));
         if (!raw) return { ...DEFAULT_PREFS };
-        const parsed = JSON.parse(raw) as Partial<GoTimeViewPrefs>;
+        const parsed = JSON.parse(raw) as Partial<GoTimeViewPrefs> & { focusView?: string };
         const focusView =
-            parsed.focusView === "next" || parsed.focusView === "best" || parsed.focusView === "all"
+            parsed.focusView === "next" ||
+            parsed.focusView === "best" ||
+            parsed.focusView === "saved"
                 ? parsed.focusView
                 : DEFAULT_PREFS.focusView;
         return {
             focusView,
-            goodOnly: typeof parsed.goodOnly === "boolean" ? parsed.goodOnly : DEFAULT_PREFS.goodOnly,
             locationFilterId:
                 typeof parsed.locationFilterId === "string" && parsed.locationFilterId
                     ? parsed.locationFilterId

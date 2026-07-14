@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router";
 import { HelpCircle } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
@@ -7,6 +7,13 @@ import { OnboardingQuestionnaire } from "@/components/onboarding/onboarding-ques
 import { GoTimeFocusViews, GO_TIME_ALL_LOCATIONS, type GoTimeFocusView } from "@/components/go-time/go-time-focus-views";
 import { getGoTimes } from "@/api/goTimes";
 import type { GoTimeWindow, GoTimesMeta, ProviderFetchStatus } from "@/api/goTimes";
+import {
+    keyForGoTimeWindow,
+    listSavedGoTimes,
+    saveGoTimeWindow,
+    unsaveGoTimeWindow,
+    type SavedGoTimeItem,
+} from "@/api/savedGoTimes";
 import { useAuth } from "@/providers/auth-provider";
 import { useSetup } from "@/providers/setup-provider";
 import { useLocale, useT, type TranslateParams } from "@/providers/locale-provider";
@@ -152,12 +159,17 @@ export const GoTime = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [focusView, setFocusView] = useState<GoTimeFocusView>("next");
-    const [goodOnly, setGoodOnly] = useState(true);
     const [locationFilterId, setLocationFilterId] = useState<string>(GO_TIME_ALL_LOCATIONS);
+    const [savedItems, setSavedItems] = useState<SavedGoTimeItem[]>([]);
+    const savedItemsRef = useRef<SavedGoTimeItem[]>([]);
     const [forecastSettingsOpen, setForecastSettingsOpen] = useState(false);
     const forecastSettingsRef = useRef<HTMLDetailsElement>(null);
     const wasInOnboardingRef = useRef<boolean | null>(null);
     const prefsHydratedForUserRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        savedItemsRef.current = savedItems;
+    }, [savedItems]);
 
     useEffect(() => {
         if (!user?.id) {
@@ -167,15 +179,14 @@ export const GoTime = () => {
         if (prefsHydratedForUserRef.current === user.id) return;
         const prefs = readGoTimeViewPrefs(user.id);
         setFocusView(prefs.focusView);
-        setGoodOnly(prefs.goodOnly);
         setLocationFilterId(prefs.locationFilterId);
         prefsHydratedForUserRef.current = user.id;
     }, [user?.id]);
 
     useEffect(() => {
         if (!user?.id || prefsHydratedForUserRef.current !== user.id) return;
-        writeGoTimeViewPrefs(user.id, { focusView, goodOnly, locationFilterId });
-    }, [user?.id, focusView, goodOnly, locationFilterId]);
+        writeGoTimeViewPrefs(user.id, { focusView, locationFilterId });
+    }, [user?.id, focusView, locationFilterId]);
 
     useEffect(() => {
         const inOnboarding = needsFullOnboarding || showOnboarding;
@@ -194,8 +205,8 @@ export const GoTime = () => {
         let cancelled = false;
         setLoading(true);
         setError(null);
-        getGoTimes()
-            .then((res) => {
+        Promise.all([getGoTimes(), listSavedGoTimes().catch(() => ({ items: [] as SavedGoTimeItem[] }))])
+            .then(([res, saved]) => {
                 if (!cancelled) {
                     setWindows(res.windows ?? []);
                     setMeta(res.meta ?? null);
@@ -209,6 +220,7 @@ export const GoTime = () => {
                     );
                     setMinSessionLengthMinutes(res.minSessionLengthMinutes ?? 60);
                     setWeatherDataFetchedAt(res.weatherDataFetchedAt ?? null);
+                    setSavedItems(saved.items ?? []);
                     track(AnalyticsEvents.goTimeLoaded, {
                         window_count: res.windows?.length ?? 0,
                         good_count: res.meta?.goodCount ?? 0,
@@ -226,6 +238,26 @@ export const GoTime = () => {
             });
         return () => { cancelled = true; };
     }, [user, needsFullOnboarding, t]);
+
+    const handleToggleSave = useCallback(async (w: GoTimeWindow) => {
+        const key = keyForGoTimeWindow(w);
+        const alreadySaved = savedItemsRef.current.some((item) => item.key === key);
+        if (alreadySaved) {
+            const res = await unsaveGoTimeWindow(key);
+            setSavedItems(res.items ?? []);
+            track(AnalyticsEvents.goTimeWindowUnsaved, {
+                location_id: w.locationId,
+                category: w.category,
+            });
+            return;
+        }
+        const res = await saveGoTimeWindow(w);
+        setSavedItems(res.items ?? []);
+        track(AnalyticsEvents.goTimeWindowSaved, {
+            location_id: w.locationId,
+            category: w.category,
+        });
+    }, []);
 
     useEffect(() => {
         if (!forecastSettingsOpen) return;
@@ -412,7 +444,7 @@ export const GoTime = () => {
                             <p className="max-w-lg text-center text-sm text-tertiary">{t("goTime.page.loadingHint")}</p>
                         </div>
                     )}
-                    {!error && !loading && windows.length === 0 && (
+                    {!error && !loading && windows.length === 0 && savedItems.length === 0 && (
                         <div className="space-y-8">
                             <p className="text-md text-tertiary">{t("goTime.page.noWindows")}</p>
                             {meta && (
@@ -571,15 +603,15 @@ export const GoTime = () => {
                             )}
                         </div>
                     )}
-                    {!error && !loading && windows.length > 0 && (
+                    {!error && !loading && (windows.length > 0 || savedItems.length > 0) && (
                         <GoTimeFocusViews
                             windows={windows}
                             view={focusView}
                             onViewChange={setFocusView}
-                            goodOnly={goodOnly}
-                            onGoodOnlyChange={setGoodOnly}
                             locationFilterId={locationFilterId}
                             onLocationFilterChange={setLocationFilterId}
+                            savedItems={savedItems}
+                            onToggleSave={handleToggleSave}
                         />
                     )}
                 </div>

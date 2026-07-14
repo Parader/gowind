@@ -22,6 +22,7 @@ import { aviationRoutes } from "./routes/aviation.js";
 import { weatherRoutes } from "./routes/weather.js";
 import { goTimesRoutes } from "./routes/goTimes.js";
 import { goTimeShareRoutes } from "./routes/goTimeShares.js";
+import { savedGoTimeRoutes } from "./routes/savedGoTimes.js";
 import { adminRoutes } from "./routes/admin.js";
 import "./auth/passport.js";
 import posthog from "./posthog.js";
@@ -79,6 +80,7 @@ async function main() {
     app.use("/weather", weatherRoutes);
     app.use("/go-times", goTimesRoutes);
     app.use("/go-time-shares", goTimeShareRoutes);
+    app.use("/saved-go-times", savedGoTimeRoutes);
     app.use("/admin", adminRoutes);
 
     app.get("/health", async (_req, res) => {

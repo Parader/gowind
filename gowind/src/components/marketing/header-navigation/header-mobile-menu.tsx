@@ -26,6 +26,7 @@ import { LanguageSwitcher } from "@/components/base/language-switcher/language-s
 import { ThemeSwitcher } from "@/components/base/theme-switcher/theme-switcher";
 import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import type { User } from "@/api/auth";
+import { MARKETING_HOME_PATH } from "@/lib/paths";
 import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
 
@@ -38,7 +39,7 @@ type MobileNavLink = {
 const legalNavHrefs = ["/privacy", "/terms"] as const;
 
 const publicNavItems: { href: string; icon: FC<{ className?: string }> }[] = [
-    { href: "/", icon: Home02 },
+    { href: MARKETING_HOME_PATH, icon: Home02 },
     { href: "/about", icon: InfoCircle },
 ];
 
@@ -49,6 +50,7 @@ const legalLabelKey: Record<string, string> = {
 
 const publicLabelKey: Record<string, string> = {
     "/": "common.nav.home",
+    [MARKETING_HOME_PATH]: "common.nav.home",
     "/about": "common.nav.about",
 };
 

@@ -1,4 +1,5 @@
 import { Link, Navigate } from "react-router";
+import { MARKETING_HOME_PATH } from "@/lib/paths";
 import { ArrowLeft } from "@untitledui/icons";
 import { useAuth } from "@/providers/auth-provider";
 import { useT } from "@/providers/locale-provider";
@@ -15,7 +16,7 @@ export const AccountSettings = () => {
         <main className="relative flex flex-1 flex-col">
                 <div className="mx-auto w-full max-w-2xl px-4 py-12 md:px-8 md:py-16">
                     <Link
-                        to="/"
+                        to={MARKETING_HOME_PATH}
                         className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-secondary hover:text-secondary_hover"
                     >
                         <ArrowLeft className="size-4" />
