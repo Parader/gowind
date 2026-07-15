@@ -1027,72 +1027,79 @@ export function GoTimeWindowCard({
                             </p>
                         ) : null}
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                        {allowSave && onToggleSave ? (
-                            <button
-                                type="button"
-                                className={cx(
-                                    "inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-semibold outline-hidden transition duration-200 focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-wait disabled:opacity-60",
-                                    isSaved
-                                        ? "text-brand-secondary hover:bg-primary_hover"
-                                        : "text-fg-quaternary hover:bg-primary_hover hover:text-fg-quaternary_hover",
-                                )}
-                                aria-label={
-                                    isSaved
-                                        ? t("goTime.windowCard.save.ariaUnsave")
-                                        : t("goTime.windowCard.save.ariaSave")
-                                }
-                                aria-pressed={isSaved}
-                                disabled={saveState === "saving"}
-                                onClick={handleToggleSave}
-                            >
-                                <BookmarkIcon className="size-4 shrink-0" filled={isSaved} />
-                                <span>
-                                    {isSaved
-                                        ? t("goTime.windowCard.save.saved")
-                                        : t("goTime.windowCard.save.button")}
-                                </span>
-                            </button>
-                        ) : null}
-                        {allowShare ? (
-                            <button
-                                type="button"
-                                className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-semibold text-fg-quaternary outline-hidden transition duration-200 hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-wait disabled:opacity-60"
-                                aria-label={t("goTime.windowCard.share.aria")}
-                                disabled={shareState === "sharing"}
-                                onClick={handleShare}
-                            >
-                                <ShareIcon className="size-4 shrink-0" />
-                                <span>{t("goTime.windowCard.share.button")}</span>
-                            </button>
-                        ) : null}
-                        {saveState === "error" ? (
-                            <span className="text-[10px] font-semibold text-error-primary">
-                                {t("goTime.windowCard.save.failed")}
+                    <div className="flex shrink-0 flex-col items-end gap-0.5 sm:flex-row sm:items-center sm:gap-1.5">
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-tertiary">
+                                {t("goTime.windowCard.metrics.score")}
                             </span>
-                        ) : shareState === "shared" || shareState === "copied" ? (
-                            <span className="text-[10px] font-semibold text-success-primary">
-                                {shareState === "shared"
-                                    ? t("goTime.windowCard.share.shared")
-                                    : t("goTime.windowCard.share.copied")}
-                            </span>
-                        ) : shareState === "error" ? (
-                            <span className="text-[10px] font-semibold text-error-primary">
-                                {t("goTime.windowCard.share.failed")}
-                            </span>
+                            <span className="text-xl font-bold tabular-nums text-primary sm:text-2xl">{scoreDisplay}</span>
+                            <Tooltip title={scoreTooltipTitle} description={scoreTooltipDescription} placement="left">
+                                <TooltipTrigger
+                                    className="rounded-md p-0.5 text-fg-quaternary outline-hidden transition duration-200 hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:ring-2 focus-visible:ring-brand"
+                                    aria-label={scoreTooltipTitle}
+                                >
+                                    <HelpCircle className="size-4 shrink-0" />
+                                </TooltipTrigger>
+                            </Tooltip>
+                        </div>
+                        {(allowSave && onToggleSave) || allowShare || saveState === "error" || shareState !== "idle" ? (
+                            <div className="flex flex-wrap items-center justify-end gap-0.5 sm:contents">
+                                {allowSave && onToggleSave ? (
+                                    <button
+                                        type="button"
+                                        className={cx(
+                                            "inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-semibold outline-hidden transition duration-200 focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-wait disabled:opacity-60",
+                                            isSaved
+                                                ? "text-brand-secondary hover:bg-primary_hover"
+                                                : "text-fg-quaternary hover:bg-primary_hover hover:text-fg-quaternary_hover",
+                                            "sm:order-first",
+                                        )}
+                                        aria-label={
+                                            isSaved
+                                                ? t("goTime.windowCard.save.ariaUnsave")
+                                                : t("goTime.windowCard.save.ariaSave")
+                                        }
+                                        aria-pressed={isSaved}
+                                        disabled={saveState === "saving"}
+                                        onClick={handleToggleSave}
+                                    >
+                                        <BookmarkIcon className="size-4 shrink-0" filled={isSaved} />
+                                        <span>
+                                            {isSaved
+                                                ? t("goTime.windowCard.save.saved")
+                                                : t("goTime.windowCard.save.button")}
+                                        </span>
+                                    </button>
+                                ) : null}
+                                {allowShare ? (
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-semibold text-fg-quaternary outline-hidden transition duration-200 hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:ring-2 focus-visible:ring-brand disabled:cursor-wait disabled:opacity-60 sm:order-first"
+                                        aria-label={t("goTime.windowCard.share.aria")}
+                                        disabled={shareState === "sharing"}
+                                        onClick={handleShare}
+                                    >
+                                        <ShareIcon className="size-4 shrink-0" />
+                                        <span>{t("goTime.windowCard.share.button")}</span>
+                                    </button>
+                                ) : null}
+                                {saveState === "error" ? (
+                                    <span className="text-[10px] font-semibold text-error-primary">
+                                        {t("goTime.windowCard.save.failed")}
+                                    </span>
+                                ) : shareState === "shared" || shareState === "copied" ? (
+                                    <span className="text-[10px] font-semibold text-success-primary">
+                                        {shareState === "shared"
+                                            ? t("goTime.windowCard.share.shared")
+                                            : t("goTime.windowCard.share.copied")}
+                                    </span>
+                                ) : shareState === "error" ? (
+                                    <span className="text-[10px] font-semibold text-error-primary">
+                                        {t("goTime.windowCard.share.failed")}
+                                    </span>
+                                ) : null}
+                            </div>
                         ) : null}
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-tertiary">
-                            {t("goTime.windowCard.metrics.score")}
-                        </span>
-                        <span className="text-xl font-bold tabular-nums text-primary sm:text-2xl">{scoreDisplay}</span>
-                        <Tooltip title={scoreTooltipTitle} description={scoreTooltipDescription} placement="left">
-                            <TooltipTrigger
-                                className="rounded-md p-0.5 text-fg-quaternary outline-hidden transition duration-200 hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:ring-2 focus-visible:ring-brand"
-                                aria-label={scoreTooltipTitle}
-                            >
-                                <HelpCircle className="size-4 shrink-0" />
-                            </TooltipTrigger>
-                        </Tooltip>
                     </div>
                 </div>
                 <p className="text-xl font-bold tabular-nums tracking-tight text-primary sm:text-2xl">
