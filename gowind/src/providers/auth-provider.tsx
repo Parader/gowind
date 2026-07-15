@@ -3,7 +3,8 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useNavigate } from "react-router";
 import type { User } from "@/api/auth";
 import * as authApi from "@/api/auth";
-import { consumeOAuthTokenFromHash, setAuthToken } from "@/api/auth-token";
+import { getAuthToken, consumeOAuthTokenFromHash, setAuthToken } from "@/api/auth-token";
+import { ApiError } from "@/api/client";
 import {
     identifyUser,
     resetAnalyticsUser,
@@ -20,19 +21,35 @@ export function getCachedAuthUser(): User | null {
 
 function getCachedUser(): User | null {
     try {
-        const cached = sessionStorage.getItem(AUTH_CACHE_KEY);
-        return cached ? (JSON.parse(cached) as User) : null;
+        const cached = localStorage.getItem(AUTH_CACHE_KEY) ?? sessionStorage.getItem(AUTH_CACHE_KEY);
+        if (!cached) return null;
+        // Migrate older sessionStorage cache to localStorage so closing the browser keeps the session UX.
+        if (!localStorage.getItem(AUTH_CACHE_KEY) && sessionStorage.getItem(AUTH_CACHE_KEY)) {
+            localStorage.setItem(AUTH_CACHE_KEY, cached);
+            sessionStorage.removeItem(AUTH_CACHE_KEY);
+        }
+        return JSON.parse(cached) as User;
     } catch {
         return null;
     }
 }
 
 function setCachedUser(user: User | null) {
-    if (user) {
-        sessionStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(user));
-    } else {
-        sessionStorage.removeItem(AUTH_CACHE_KEY);
+    try {
+        if (user) {
+            localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify(user));
+            sessionStorage.removeItem(AUTH_CACHE_KEY);
+        } else {
+            localStorage.removeItem(AUTH_CACHE_KEY);
+            sessionStorage.removeItem(AUTH_CACHE_KEY);
+        }
+    } catch {
+        /* private mode / quota */
     }
+}
+
+function isUnauthorizedError(err: unknown): boolean {
+    return err instanceof ApiError && (err.status === 401 || err.status === 403);
 }
 
 interface AuthContextValue {
@@ -48,18 +65,20 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    // Do not trust sessionStorage alone — wait for /auth/me before treating as logged in on protected routes.
-    const [user, setUser] = useState<User | null>(null);
+    // Prefer a localStorage cache for instant restore; always confirm with /auth/me when online.
+    const [user, setUser] = useState<User | null>(() => (getAuthToken() ? getCachedUser() : null));
     const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
-    const applyUser = useCallback((nextUser: User | null, admin = false) => {
+    const applyUser = useCallback((nextUser: User | null, admin = false, options?: { clearToken?: boolean }) => {
         setUser(nextUser);
         setIsAdmin(admin);
         setCachedUser(nextUser);
         if (!nextUser) {
-            setAuthToken(null);
+            if (options?.clearToken !== false) {
+                setAuthToken(null);
+            }
             resetAnalyticsUser();
             return;
         }
@@ -72,26 +91,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const loadUser = useCallback(
         async (options?: { retries?: number }) => {
-            const retries = options?.retries ?? 1;
+            const retries = options?.retries ?? 3;
+            const hasToken = Boolean(getAuthToken());
             setIsLoading(true);
 
+            // No stored session — stay logged out.
+            if (!hasToken) {
+                applyUser(null, false, { clearToken: false });
+                setIsLoading(false);
+                return null;
+            }
+
+            let lastError: unknown;
             for (let attempt = 0; attempt < retries; attempt++) {
                 try {
                     const { user: nextUser, isAdmin: admin } = await authApi.getMe();
                     applyUser(nextUser, admin ?? false);
                     setIsLoading(false);
                     return nextUser;
-                } catch {
+                } catch (err) {
+                    lastError = err;
+                    if (isUnauthorizedError(err)) {
+                        break;
+                    }
                     if (attempt < retries - 1) {
-                        await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+                        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
                     }
                 }
             }
 
-            // Auth failed — clear any stale cache so we never show wizard as if logged in.
-            applyUser(null);
+            // Real auth failure → clear session.
+            if (isUnauthorizedError(lastError)) {
+                applyUser(null);
+                setIsLoading(false);
+                return null;
+            }
+
+            // Transient network/server error: keep token + cached user so closing the mobile
+            // browser and coming back does not force a logout.
+            const cached = getCachedUser();
+            if (cached) {
+                applyUser(cached, false, { clearToken: false });
+            }
             setIsLoading(false);
-            return null;
+            return cached;
         },
         [applyUser]
     );
@@ -104,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const isOAuthReturn = params.get("logged_in") === "1";
 
         void (async () => {
-            const authenticatedUser = await loadUser({ retries: isOAuthReturn ? 3 : 1 });
+            const authenticatedUser = await loadUser({ retries: isOAuthReturn ? 4 : 3 });
             if (isOAuthReturn && authenticatedUser) {
                 trackAuthSuccess(AnalyticsEvents.userLoggedIn, "google");
             }
@@ -145,7 +188,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const logout = useCallback(async () => {
-        await authApi.logout();
+        try {
+            await authApi.logout();
+        } catch {
+            /* still clear local session */
+        }
         applyUser(null);
         track(AnalyticsEvents.userLoggedOut);
         navigate("/");

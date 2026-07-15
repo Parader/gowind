@@ -58,7 +58,7 @@ export function applyAnalyticsConsent(consent: CookieConsentRecord): void {
 
 function identifyCachedUser(): void {
     try {
-        const cached = sessionStorage.getItem("gowind_auth_user");
+        const cached = localStorage.getItem("gowind_auth_user") ?? sessionStorage.getItem("gowind_auth_user");
         if (!cached) return;
         const user = JSON.parse(cached) as { id: string; email?: string; name?: string };
         if (user?.id) {
