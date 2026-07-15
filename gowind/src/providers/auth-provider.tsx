@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { useNavigate } from "react-router";
 import type { User } from "@/api/auth";
 import * as authApi from "@/api/auth";
-import { getAuthToken, consumeOAuthTokenFromHash, setAuthToken } from "@/api/auth-token";
+import { getAuthToken, consumeOAuthTokenFromUrl, setAuthToken } from "@/api/auth-token";
 import { ApiError } from "@/api/client";
 import {
     identifyUser,
@@ -74,21 +74,30 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readInitialSession(): { user: User | null; hasSession: boolean } {
+function readInitialSession(): { user: User | null; hasSession: boolean; oauthReturn: boolean } {
+    // Consume the OAuth token during the first render — before protected routes
+    // can <Navigate to="/login"> and wipe ?token= / #token= from the URL.
+    const oauthToken = consumeOAuthTokenFromUrl();
+    if (oauthToken) {
+        setAuthToken(oauthToken);
+    }
+    const params = new URLSearchParams(window.location.search);
+    const oauthReturn = params.get("logged_in") === "1" || Boolean(oauthToken);
     const token = getAuthToken();
-    if (!token) return { user: null, hasSession: false };
-    return { user: getCachedUser(), hasSession: true };
+    if (!token) return { user: null, hasSession: false, oauthReturn };
+    return { user: getCachedUser(), hasSession: true, oauthReturn };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const initial = readInitialSession();
-    const [user, setUser] = useState<User | null>(initial.user);
+    const [session] = useState(readInitialSession);
+    const [user, setUser] = useState<User | null>(session.user);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [isLoading, setIsLoading] = useState(initial.hasSession);
-    const [hasSession, setHasSession] = useState(initial.hasSession);
+    const [isLoading, setIsLoading] = useState(session.hasSession || session.oauthReturn);
+    const [hasSession, setHasSession] = useState(session.hasSession);
     const navigate = useNavigate();
     const loadGeneration = useRef(0);
     const bootstrapped = useRef(false);
+    const oauthReturnRef = useRef(session.oauthReturn);
 
     const applyUser = useCallback((nextUser: User | null, admin = false, options?: { clearToken?: boolean }) => {
         setUser(nextUser);
@@ -181,14 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (bootstrapped.current) return;
         bootstrapped.current = true;
 
-        const oauthToken = consumeOAuthTokenFromHash();
-        if (oauthToken) {
-            setAuthToken(oauthToken);
-            setHasSession(true);
-        }
-
-        const params = new URLSearchParams(window.location.search);
-        const isOAuthReturn = params.get("logged_in") === "1";
+        const isOAuthReturn = oauthReturnRef.current;
 
         void (async () => {
             const authenticatedUser = await loadUser({ retries: isOAuthReturn ? 5 : 4 });
@@ -197,12 +199,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
             if (!isOAuthReturn) return;
 
+            const params = new URLSearchParams(window.location.search);
             params.delete("logged_in");
+            params.delete("token");
             const remainingSearch = params.toString();
+            const stayLoggedIn = Boolean(authenticatedUser || getAuthToken());
             navigate(
                 {
-                    pathname: authenticatedUser || getAuthToken() ? "/go-time" : "/login",
-                    search: remainingSearch ? `?${remainingSearch}` : "",
+                    pathname: stayLoggedIn ? "/go-time" : "/login",
+                    search: stayLoggedIn
+                        ? remainingSearch
+                            ? `?${remainingSearch}`
+                            : ""
+                        : remainingSearch
+                          ? `?${remainingSearch}&error=google`
+                          : "?error=google",
                 },
                 { replace: true }
             );

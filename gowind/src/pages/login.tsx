@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate } from "react-router";
+import { Link, Navigate, useSearchParams } from "react-router";
 import { Lock01, Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
@@ -12,7 +12,10 @@ import { trackAuthFailure, trackOAuthStarted } from "@/lib/analytics";
 export const Login = () => {
     const { login, getGoogleLoginUrl, user, isLoading } = useAuth();
     const t = useT();
-    const [error, setError] = useState<string | null>(null);
+    const [searchParams] = useSearchParams();
+    const [error, setError] = useState<string | null>(() =>
+        searchParams.get("error") === "google" ? t("auth.login.googleFailed") : null
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     if (isLoading) {

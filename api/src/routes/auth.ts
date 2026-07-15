@@ -116,7 +116,13 @@ router.get(
         const user = req.user as { _id: unknown; email: string; name?: string; image?: string };
         const token = signToken({ userId: String(user._id), email: user.email });
         setTokenCookie(res, token);
-        res.redirect(`${FRONTEND_URL}/go-time?logged_in=1#token=${encodeURIComponent(token)}`);
+        // Put token in the query string — not the hash. Reverse proxies (and some
+        // browsers) strip URL fragments from Location headers, which left users
+        // on /go-time?logged_in=1 with no token and bounced them back to login.
+        const redirect = new URL("/go-time", FRONTEND_URL);
+        redirect.searchParams.set("logged_in", "1");
+        redirect.searchParams.set("token", token);
+        res.redirect(redirect.toString());
     }
 );
 

@@ -111,6 +111,7 @@ export const contentFr = {
             forgotPassword: "Mot de passe oublié?",
             submit: "Connexion",
             signInFailed: "Échec de la connexion",
+            googleFailed: "La connexion Google a échoué. Veuillez réessayer.",
             noAccount: "Vous n'avez pas de compte?",
             signUpFree: "Inscription gratuite",
             backToHome: "← Retour à l'accueil",

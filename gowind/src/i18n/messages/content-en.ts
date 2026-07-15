@@ -111,6 +111,7 @@ export const contentEn = {
             forgotPassword: "Forgot password?",
             submit: "Sign in",
             signInFailed: "Sign in failed",
+            googleFailed: "Google sign-in failed. Please try again.",
             noAccount: "Don't have an account?",
             signUpFree: "Sign up free",
             backToHome: "← Back to home",
