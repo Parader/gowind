@@ -211,7 +211,7 @@ function JsonBlock({ data, label }: { data: unknown; label?: string }) {
 
 export const Data = () => {
     const { t, dateLocale } = useLocale();
-    const { user, isAdmin, isLoading } = useAuth();
+    const { user, isAdmin, isLoading, hasSession } = useAuth();
     const { locations, preferences } = useSetup();
     const [multiSource, setMultiSource] = useState<
         Record<string, ProviderForecast[]>
@@ -415,11 +415,15 @@ export const Data = () => {
         return out;
     }, [multiSource, days, t, dateLocale]);
 
-    if (!isLoading && !user) {
+    if (isLoading || (hasSession && !user)) {
+        return null;
+    }
+
+    if (!user) {
         return <Navigate to="/login" replace />;
     }
 
-    if (!isLoading && user && !isAdmin) {
+    if (user && !isAdmin) {
         return <Navigate to="/" replace />;
     }
 

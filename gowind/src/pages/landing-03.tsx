@@ -98,7 +98,7 @@ function Reveal({
 }
 
 export const Landing03 = () => {
-    const { user, isLoading } = useAuth();
+    const { user, isLoading, hasSession } = useAuth();
     const [searchParams] = useSearchParams();
     const preferMarketingHome = searchParams.has("home");
     const t = useT();
@@ -135,7 +135,7 @@ export const Landing03 = () => {
 
     // Bare `/` (e.g. typing go-wind.com) → Go Time when logged in.
     // Logo / Home nav use `/?home=1` so you can open the marketing page on purpose.
-    if (!preferMarketingHome && isLoading) {
+    if (!preferMarketingHome && (isLoading || (hasSession && !user))) {
         return (
             <main className="flex flex-1 items-center justify-center py-24">
                 <LoadingIndicator type="dot-circle" size="lg" label={t("common.actions.loading")} />
@@ -143,7 +143,7 @@ export const Landing03 = () => {
         );
     }
 
-    if (!preferMarketingHome && user) {
+    if (!preferMarketingHome && (user || hasSession)) {
         return <Navigate to="/go-time" replace />;
     }
 

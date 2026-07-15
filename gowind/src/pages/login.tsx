@@ -1,18 +1,31 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, Navigate } from "react-router";
 import { Lock01, Mail01 } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
+import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import { useAuth } from "@/providers/auth-provider";
 import { useT } from "@/providers/locale-provider";
 import { trackAuthFailure, trackOAuthStarted } from "@/lib/analytics";
 
 export const Login = () => {
-    const { login, getGoogleLoginUrl } = useAuth();
+    const { login, getGoogleLoginUrl, user, isLoading, hasSession } = useAuth();
     const t = useT();
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    if (isLoading || (hasSession && !user)) {
+        return (
+            <main className="flex flex-1 items-center justify-center px-4 py-16">
+                <LoadingIndicator type="dot-circle" size="lg" label={t("common.actions.loading")} />
+            </main>
+        );
+    }
+
+    if (user || hasSession) {
+        return <Navigate to="/go-time" replace />;
+    }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -21,14 +34,14 @@ export const Login = () => {
         const email = (form.elements.namedItem("email") as HTMLInputElement)?.value;
         const password = (form.elements.namedItem("password") as HTMLInputElement)?.value;
         if (!email || !password) return;
-        setIsLoading(true);
+        setIsSubmitting(true);
         try {
             await login(email, password);
         } catch (err) {
             trackAuthFailure("login", "email");
             setError(err instanceof Error ? err.message : t("auth.login.signInFailed"));
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -65,7 +78,7 @@ export const Login = () => {
                                 color="secondary"
                                 className="w-full"
                                 onClick={handleGoogleLogin}
-                                isDisabled={isLoading}
+                                isDisabled={isSubmitting}
                             >
                                 {t("auth.login.google")}
                             </Button>
@@ -116,8 +129,8 @@ export const Login = () => {
                                 size="lg"
                                 color="primary"
                                 className="mt-2"
-                                isLoading={isLoading}
-                                isDisabled={isLoading}
+                                isLoading={isSubmitting}
+                                isDisabled={isSubmitting}
                             >
                                 {t("auth.login.submit")}
                             </Button>

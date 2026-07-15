@@ -9,7 +9,7 @@ import * as adminApi from "@/api/admin";
 
 export const Admin = () => {
     const t = useT();
-    const { user, isAdmin, isLoading } = useAuth();
+    const { user, isAdmin, isLoading, hasSession } = useAuth();
     const [counts, setCounts] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -41,11 +41,15 @@ export const Admin = () => {
         }
     }, [t]);
 
-    if (!isLoading && !user) {
+    if (isLoading || (hasSession && !user)) {
+        return null;
+    }
+
+    if (!user) {
         return <Navigate to="/login" replace />;
     }
 
-    if (!isLoading && user && !isAdmin) {
+    if (user && !isAdmin) {
         return <Navigate to="/" replace />;
     }
 

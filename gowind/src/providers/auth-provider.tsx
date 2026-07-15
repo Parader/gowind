@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { User } from "@/api/auth";
 import * as authApi from "@/api/auth";
@@ -23,7 +23,6 @@ function getCachedUser(): User | null {
     try {
         const cached = localStorage.getItem(AUTH_CACHE_KEY) ?? sessionStorage.getItem(AUTH_CACHE_KEY);
         if (!cached) return null;
-        // Migrate older sessionStorage cache to localStorage so closing the browser keeps the session UX.
         if (!localStorage.getItem(AUTH_CACHE_KEY) && sessionStorage.getItem(AUTH_CACHE_KEY)) {
             localStorage.setItem(AUTH_CACHE_KEY, cached);
             sessionStorage.removeItem(AUTH_CACHE_KEY);
@@ -52,10 +51,21 @@ function isUnauthorizedError(err: unknown): boolean {
     return err instanceof ApiError && (err.status === 401 || err.status === 403);
 }
 
+function requestPersistentStorage() {
+    try {
+        void navigator.storage?.persist?.();
+    } catch {
+        /* ignore */
+    }
+}
+
 interface AuthContextValue {
     user: User | null;
     isAdmin: boolean;
+    /** True until the first session check finishes (or we know there is no token). */
     isLoading: boolean;
+    /** True when a token exists locally — protected routes should not bounce to login yet. */
+    hasSession: boolean;
     login: (email: string, password: string) => Promise<void>;
     signup: (email: string, password: string, name?: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -64,12 +74,20 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function readInitialSession(): { user: User | null; hasSession: boolean } {
+    const token = getAuthToken();
+    if (!token) return { user: null, hasSession: false };
+    return { user: getCachedUser(), hasSession: true };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-    // Prefer a localStorage cache for instant restore; always confirm with /auth/me when online.
-    const [user, setUser] = useState<User | null>(() => (getAuthToken() ? getCachedUser() : null));
+    const initial = readInitialSession();
+    const [user, setUser] = useState<User | null>(initial.user);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(initial.hasSession);
+    const [hasSession, setHasSession] = useState(initial.hasSession);
     const navigate = useNavigate();
+    const loadGeneration = useRef(0);
 
     const applyUser = useCallback((nextUser: User | null, admin = false, options?: { clearToken?: boolean }) => {
         setUser(nextUser);
@@ -78,10 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!nextUser) {
             if (options?.clearToken !== false) {
                 setAuthToken(null);
+                setHasSession(false);
             }
             resetAnalyticsUser();
             return;
         }
+        setHasSession(true);
         identifyUser(nextUser.id, {
             email: nextUser.email,
             name: nextUser.name,
@@ -91,47 +111,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const loadUser = useCallback(
         async (options?: { retries?: number }) => {
+            const generation = ++loadGeneration.current;
             const retries = options?.retries ?? 3;
-            const hasToken = Boolean(getAuthToken());
+            const token = getAuthToken();
             setIsLoading(true);
 
-            // No stored session — stay logged out.
-            if (!hasToken) {
+            if (!token) {
+                if (generation !== loadGeneration.current) return null;
                 applyUser(null, false, { clearToken: false });
+                setHasSession(false);
                 setIsLoading(false);
                 return null;
             }
+
+            setHasSession(true);
+            requestPersistentStorage();
 
             let lastError: unknown;
             for (let attempt = 0; attempt < retries; attempt++) {
                 try {
                     const { user: nextUser, isAdmin: admin } = await authApi.getMe();
+                    if (generation !== loadGeneration.current) return nextUser;
                     applyUser(nextUser, admin ?? false);
                     setIsLoading(false);
                     return nextUser;
                 } catch (err) {
                     lastError = err;
-                    if (isUnauthorizedError(err)) {
-                        break;
-                    }
+                    if (isUnauthorizedError(err)) break;
                     if (attempt < retries - 1) {
-                        await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+                        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
                     }
                 }
             }
 
-            // Real auth failure → clear session.
+            if (generation !== loadGeneration.current) return null;
+
             if (isUnauthorizedError(lastError)) {
                 applyUser(null);
                 setIsLoading(false);
                 return null;
             }
 
-            // Transient network/server error: keep token + cached user so closing the mobile
-            // browser and coming back does not force a logout.
+            // Network/server blip: keep local session so killing Chrome does not log the user out.
             const cached = getCachedUser();
             if (cached) {
                 applyUser(cached, false, { clearToken: false });
+            } else {
+                // Token still present — stay "has session" and avoid login bounce; user refetch later.
+                setHasSession(true);
             }
             setIsLoading(false);
             return cached;
@@ -141,13 +168,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const oauthToken = consumeOAuthTokenFromHash();
-        if (oauthToken) setAuthToken(oauthToken);
+        if (oauthToken) {
+            setAuthToken(oauthToken);
+            setHasSession(true);
+        }
 
         const params = new URLSearchParams(window.location.search);
         const isOAuthReturn = params.get("logged_in") === "1";
 
         void (async () => {
-            const authenticatedUser = await loadUser({ retries: isOAuthReturn ? 4 : 3 });
+            const authenticatedUser = await loadUser({ retries: isOAuthReturn ? 5 : 4 });
             if (isOAuthReturn && authenticatedUser) {
                 trackAuthSuccess(AnalyticsEvents.userLoggedIn, "google");
             }
@@ -157,7 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const remainingSearch = params.toString();
             navigate(
                 {
-                    pathname: authenticatedUser ? "/go-time" : "/login",
+                    pathname: authenticatedUser || getAuthToken() ? "/go-time" : "/login",
                     search: remainingSearch ? `?${remainingSearch}` : "",
                 },
                 { replace: true }
@@ -165,10 +195,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })();
     }, [loadUser, navigate]);
 
+    // Re-validate when the tab/app becomes visible again (mobile Chrome resume).
+    useEffect(() => {
+        const onVisible = () => {
+            if (document.visibilityState !== "visible") return;
+            if (!getAuthToken()) return;
+            void loadUser({ retries: 2 });
+        };
+        document.addEventListener("visibilitychange", onVisible);
+        window.addEventListener("focus", onVisible);
+        return () => {
+            document.removeEventListener("visibilitychange", onVisible);
+            window.removeEventListener("focus", onVisible);
+        };
+    }, [loadUser]);
+
     const login = useCallback(
         async (email: string, password: string) => {
             const { user: nextUser, token } = await authApi.login(email, password);
             setAuthToken(token);
+            setHasSession(true);
+            requestPersistentStorage();
             applyUser(nextUser);
             trackAuthSuccess(AnalyticsEvents.userLoggedIn, "email");
             navigate("/go-time");
@@ -180,6 +227,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         async (email: string, password: string, name?: string) => {
             const { user: nextUser, token } = await authApi.signup(email, password, name);
             setAuthToken(token);
+            setHasSession(true);
+            requestPersistentStorage();
             applyUser(nextUser);
             trackAuthSuccess(AnalyticsEvents.userSignedUp, "email");
             navigate("/go-time");
@@ -202,6 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAdmin,
         isLoading,
+        hasSession,
         login,
         signup,
         logout,

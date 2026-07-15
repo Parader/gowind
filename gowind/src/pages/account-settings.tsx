@@ -5,10 +5,14 @@ import { useAuth } from "@/providers/auth-provider";
 import { useT } from "@/providers/locale-provider";
 
 export const AccountSettings = () => {
-    const { user, isLoading } = useAuth();
+    const { user, isLoading, hasSession } = useAuth();
     const t = useT();
 
-    if (!isLoading && !user) {
+    if (isLoading || (hasSession && !user)) {
+        return null;
+    }
+
+    if (!user) {
         return <Navigate to="/login" replace />;
     }
 

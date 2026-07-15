@@ -22,7 +22,7 @@ function initialSubIndexFromUrl(searchParams: URLSearchParams): number {
 
 export const Preferences = () => {
     const t = useT();
-    const { user, isLoading } = useAuth();
+    const { user, isLoading, hasSession } = useAuth();
     const { needsFullOnboarding } = useSetup();
     const [searchParams, setSearchParams] = useSearchParams();
     const [prefSubIndex, setPrefSubIndex] = useState(() =>
@@ -48,7 +48,7 @@ export const Preferences = () => {
         setPrefSubIndex(i);
     };
 
-    if (isLoading) {
+    if (isLoading || (hasSession && !user)) {
         return (
             <main className="flex flex-1 items-center justify-center px-4 py-16">
                 <LoadingIndicator type="dot-circle" size="lg" label={t("common.actions.loading")} />

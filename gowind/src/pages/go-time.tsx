@@ -143,7 +143,7 @@ function nearMissCategoryLabel(cat: NearMiss["category"], t: TFn): string {
 }
 
 export const GoTime = () => {
-    const { user, isAdmin, isLoading } = useAuth();
+    const { user, isAdmin, isLoading, hasSession } = useAuth();
     const { needsFullOnboarding } = useSetup();
     const t = useT();
     const { dateLocale } = useLocale();
@@ -282,7 +282,7 @@ export const GoTime = () => {
         };
     }, [forecastSettingsOpen]);
 
-    if (isLoading) {
+    if (isLoading || (hasSession && !user)) {
         return (
             <main className="flex flex-1 items-center justify-center px-4 py-16">
                 <LoadingIndicator type="dot-circle" size="lg" label={t("goTime.page.loadingLabel")} />

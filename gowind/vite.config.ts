@@ -2,6 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 const PRODUCTION_SITE_URL = "https://go-wind.com";
 
@@ -41,6 +42,67 @@ export default defineConfig(({ mode }) => {
         plugins: [
             react(),
             tailwindcss(),
+            VitePWA({
+                registerType: "autoUpdate",
+                injectRegister: "auto",
+                includeAssets: [
+                    "favicon-32x32.png",
+                    "apple-touch-icon.png",
+                    "gowind_logo.svg",
+                    "gowind_logo_white.svg",
+                ],
+                manifest: {
+                    name: "GoWind",
+                    short_name: "GoWind",
+                    description: SITE_META.description,
+                    start_url: "/go-time?source=pwa",
+                    scope: "/",
+                    display: "standalone",
+                    orientation: "portrait-primary",
+                    background_color: "#ffffff",
+                    theme_color: "#3e4784",
+                    categories: ["weather", "lifestyle", "utilities"],
+                    icons: [
+                        {
+                            src: "/pwa-192x192.png",
+                            sizes: "192x192",
+                            type: "image/png",
+                            purpose: "any",
+                        },
+                        {
+                            src: "/pwa-512x512.png",
+                            sizes: "512x512",
+                            type: "image/png",
+                            purpose: "any",
+                        },
+                        {
+                            src: "/pwa-maskable-512x512.png",
+                            sizes: "512x512",
+                            type: "image/png",
+                            purpose: "maskable",
+                        },
+                    ],
+                },
+                workbox: {
+                    cleanupOutdatedCaches: true,
+                    navigateFallback: "/index.html",
+                    navigateFallbackDenylist: [/^\/api\//],
+                    runtimeCaching: [
+                        {
+                            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
+                            handler: "CacheFirst",
+                            options: {
+                                cacheName: "google-fonts",
+                                expiration: {
+                                    maxEntries: 20,
+                                    maxAgeSeconds: 60 * 60 * 24 * 365,
+                                },
+                                cacheableResponse: { statuses: [0, 200] },
+                            },
+                        },
+                    ],
+                },
+            }),
             {
                 name: "inject-social-meta",
                 transformIndexHtml(html) {
