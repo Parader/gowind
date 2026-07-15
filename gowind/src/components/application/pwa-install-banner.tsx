@@ -5,9 +5,9 @@ import { useT } from "@/providers/locale-provider";
 
 export function PwaInstallBanner() {
     const t = useT();
-    const { visible, mode, install, dismiss, canPrompt } = usePwaInstall();
+    const { visible, mode, install, dismiss, canPrompt, available } = usePwaInstall();
 
-    if (!visible || !mode) return null;
+    if (!available || !visible) return null;
 
     return (
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] flex justify-center p-4 sm:p-6">
@@ -21,16 +21,20 @@ export function PwaInstallBanner() {
                 <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-primary">{t("pwaInstall.title")}</p>
                     <p className="mt-0.5 text-sm text-tertiary">
-                        {mode === "ios" ? t("pwaInstall.iosDescription") : t("pwaInstall.description")}
+                        {mode === "ios"
+                            ? t("pwaInstall.iosDescription")
+                            : mode === "manual"
+                              ? t("pwaInstall.manualDescription")
+                              : t("pwaInstall.description")}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                        {mode === "chromium" && canPrompt && (
+                        {canPrompt ? (
                             <Button size="sm" color="primary" onClick={() => void install()}>
                                 {t("pwaInstall.install")}
                             </Button>
-                        )}
-                        <Button size="sm" color="secondary" onClick={dismiss}>
-                            {t("pwaInstall.dismiss")}
+                        ) : null}
+                        <Button size="sm" color={canPrompt ? "secondary" : "primary"} onClick={dismiss}>
+                            {canPrompt ? t("pwaInstall.dismiss") : t("pwaInstall.gotIt")}
                         </Button>
                     </div>
                 </div>

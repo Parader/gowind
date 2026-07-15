@@ -413,7 +413,11 @@ export const contentEn = {
                 description: "Good-rated windows in the next seven days, earliest first ({{scope}}).",
                 navLabel: "Browse best windows this week",
                 emptyTitle: "No good window in the next 7 days",
-                emptyDefault: "No good-rated windows in the next week. Check Next for marginal slots, or widen your limits.",
+                emptyDefault: "No good-rated windows match your preferences in the next week.",
+                potentialTitle: "But here are your best potential windows",
+                potentialDescription:
+                    "The highest-scoring marginal windows in the next seven days, best score first.",
+                potentialNavLabel: "Browse best potential windows this week",
             },
             saved: {
                 title: "Saved windows",
@@ -816,7 +820,10 @@ export const contentEn = {
         title: "Install GoWind",
         description: "Add GoWind to your home screen for quick access to your wind windows.",
         iosDescription: "Tap Share, then Add to Home Screen to install GoWind.",
-        install: "Install",
+        manualDescription: "Open your browser menu, then choose Install app or Add to Home screen.",
+        install: "Install app",
+        howTo: "How to install",
+        gotIt: "Got it",
         dismiss: "Not now",
     },
 

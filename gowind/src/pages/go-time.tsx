@@ -3,6 +3,7 @@ import { Navigate } from "react-router";
 import { HelpCircle } from "@untitledui/icons";
 import { Button } from "@/components/base/buttons/button";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
+import { PwaInstallHeroCta } from "@/components/application/pwa-install-hero-cta";
 import { OnboardingQuestionnaire } from "@/components/onboarding/onboarding-questionnaire";
 import { GoTimeFocusViews, GO_TIME_ALL_LOCATIONS, type GoTimeFocusView } from "@/components/go-time/go-time-focus-views";
 import { getGoTimes } from "@/api/goTimes";
@@ -424,11 +425,14 @@ export const GoTime = () => {
                         </div>
                         <p className="mt-1 hidden text-md text-tertiary md:mt-2 md:block">{t("goTime.page.subtitle")}</p>
                     </div>
-                    {isAdmin && (
-                        <Button size="md" color="secondary" onClick={() => setShowOnboarding(true)}>
-                            {t("goTime.page.runSetupAgain")}
-                        </Button>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <PwaInstallHeroCta size="md" color="secondary" className="rounded-lg" />
+                        {isAdmin && (
+                            <Button size="md" color="secondary" onClick={() => setShowOnboarding(true)}>
+                                {t("goTime.page.runSetupAgain")}
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Windows list */}

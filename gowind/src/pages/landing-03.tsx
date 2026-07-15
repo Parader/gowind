@@ -4,6 +4,7 @@ import { ArrowRight, ChevronDown, Heart, Map01, Sliders01, Stars01 } from "@unti
 import "@sneas/telephone/iphone-16-max.js";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
+import { PwaInstallHeroCta } from "@/components/application/pwa-install-hero-cta";
 import { Button } from "@/components/base/buttons/button";
 import { GoTimeWindowCard } from "@/components/go-time/go-time-window-card";
 import { getLandingDemoGoTimeWindows, LANDING_DEMO_ROTATE_MS } from "@/data/landing-demo-go-time";
@@ -183,7 +184,7 @@ export const Landing03 = () => {
                                 <p className="mt-6 max-w-xl text-lg leading-relaxed text-tertiary md:text-xl">
                                     {t("landing.hero.subtitle")}
                                 </p>
-                                <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                                <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                                     <Button
                                         size="lg"
                                         color="primary"
@@ -202,6 +203,7 @@ export const Landing03 = () => {
                                     >
                                         {t("landing.hero.logIn")}
                                     </Button>
+                                    <PwaInstallHeroCta />
                                 </div>
                                 <p className="mt-6 text-sm text-quaternary">
                                     {t("landing.hero.tagline")}

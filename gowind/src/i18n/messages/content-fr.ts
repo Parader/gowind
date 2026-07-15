@@ -414,8 +414,11 @@ export const contentFr = {
                     "Fenêtres classées bonnes dans les sept prochains jours, les plus tôt d’abord ({{scope}}).",
                 navLabel: "Parcourir les meilleures fenêtres de la semaine",
                 emptyTitle: "Aucune bonne fenêtre dans les 7 prochains jours",
-                emptyDefault:
-                    "Aucune fenêtre classée bonne cette semaine. Voyez Prochain pour les créneaux marginaux, ou élargissez vos limites.",
+                emptyDefault: "Aucune fenêtre classée bonne ne correspond à vos préférences cette semaine.",
+                potentialTitle: "Mais voici vos meilleures fenêtres potentielles",
+                potentialDescription:
+                    "Les fenêtres marginales ayant les meilleurs scores dans les sept prochains jours, par score décroissant.",
+                potentialNavLabel: "Parcourir les meilleures fenêtres potentielles de la semaine",
             },
             saved: {
                 title: "Fenêtres enregistrées",
@@ -818,7 +821,10 @@ export const contentFr = {
         title: "Installer GoWind",
         description: "Ajoutez GoWind à votre écran d'accueil pour accéder rapidement à vos fenêtres de vent.",
         iosDescription: "Appuyez sur Partager, puis sur Sur l'écran d'accueil pour installer GoWind.",
-        install: "Installer",
+        manualDescription: "Ouvrez le menu du navigateur, puis choisissez Installer l'appli ou Ajouter à l'écran d'accueil.",
+        install: "Installer l'appli",
+        howTo: "Comment installer",
+        gotIt: "Compris",
         dismiss: "Pas maintenant",
     },
 

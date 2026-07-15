@@ -1,7 +1,8 @@
 import { Link } from "react-router";
-import { LogOut01, Settings01, User01 } from "@untitledui/icons";
+import { Download01, LogOut01, Settings01, User01 } from "@untitledui/icons";
 import { Button as AriaButton, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { Avatar } from "@/components/base/avatar/avatar";
+import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { useAuth } from "@/providers/auth-provider";
 import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
@@ -12,6 +13,7 @@ const menuItemClass =
 export const HeaderProfileMenu = ({ size = "sm" }: { size?: "sm" | "md" }) => {
     const { user, isAdmin, logout } = useAuth();
     const t = useT();
+    const { install, available } = usePwaInstall();
 
     if (!user) return null;
 
@@ -66,6 +68,16 @@ export const HeaderProfileMenu = ({ size = "sm" }: { size?: "sm" | "md" }) => {
                             <Settings01 className="size-5 text-fg-quaternary" />
                             {t("common.nav.accountSettings")}
                         </Link>
+                        {available && (
+                            <button
+                                type="button"
+                                className={cx(menuItemClass, "w-full border-0 bg-transparent text-left")}
+                                onClick={() => void install()}
+                            >
+                                <Download01 className="size-5 text-fg-quaternary" />
+                                {t("pwaInstall.install")}
+                            </button>
+                        )}
                         {isAdmin && (
                             <Link
                                 to="/admin"

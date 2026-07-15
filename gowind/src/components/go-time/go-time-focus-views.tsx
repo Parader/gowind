@@ -26,6 +26,7 @@ type CardSaveProps = {
 
 /** `all` = every saved location; otherwise filter to this `locationId`. */
 export const GO_TIME_ALL_LOCATIONS = "all" as const;
+const BEST_FALLBACK_LIMIT = 5;
 
 function startOfLocalDay(d: Date): Date {
     const x = new Date(d);
@@ -163,6 +164,18 @@ export function GoTimeFocusViews({
         return [...pool].sort(compareByStartTime);
     }, [filtered, now]);
 
+    const bestMarginalCandidates = useMemo(
+        () =>
+            filtered
+                .filter((w) => w.category === "MARGINAL" && isWindowInNextSevenDays(w, now))
+                .sort((a, b) => {
+                    const scoreDifference = b.averageScore - a.averageScore;
+                    return scoreDifference !== 0 ? scoreDifference : compareByStartTime(a, b);
+                })
+                .slice(0, BEST_FALLBACK_LIMIT),
+        [filtered, now],
+    );
+
     const savedFiltered = useMemo(() => {
         if (locationFilterId === GO_TIME_ALL_LOCATIONS) return savedItems;
         return savedItems.filter((item) => item.locationId === locationFilterId);
@@ -261,10 +274,36 @@ export function GoTimeFocusViews({
                                     cardSaveProps={cardSaveProps}
                                 />
                             ) : (
-                                <EmptyFocus
-                                    title={t("goTime.focusViews.best.emptyTitle")}
-                                    body={t("goTime.focusViews.best.emptyDefault")}
-                                />
+                                <div className="space-y-5 md:space-y-6">
+                                    <EmptyFocus
+                                        title={t("goTime.focusViews.best.emptyTitle")}
+                                        body={t("goTime.focusViews.best.emptyDefault")}
+                                    />
+                                    {bestMarginalCandidates.length > 0 ? (
+                                        <section
+                                            aria-labelledby="focus-best-potential-heading"
+                                            className="space-y-3 md:space-y-4"
+                                        >
+                                            <header>
+                                                <h3
+                                                    id="focus-best-potential-heading"
+                                                    className="text-base font-semibold text-primary md:text-lg"
+                                                >
+                                                    {t("goTime.focusViews.best.potentialTitle")}
+                                                </h3>
+                                                <p className="mt-1 text-sm text-tertiary">
+                                                    {t("goTime.focusViews.best.potentialDescription")}
+                                                </p>
+                                            </header>
+                                            <FocusWindowSwiper
+                                                key={`best-potential-${locationFilterId}-${bestMarginalCandidates.map((w) => w.id).join("|")}`}
+                                                windows={bestMarginalCandidates}
+                                                navLabel={t("goTime.focusViews.best.potentialNavLabel")}
+                                                cardSaveProps={cardSaveProps}
+                                            />
+                                        </section>
+                                    ) : null}
+                                </div>
                             )}
                         </section>
                     </Tabs.Panel>

@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import {
     BarChartSquare02,
+    Download01,
     Home02,
     InfoCircle,
     LogOut01,
@@ -26,6 +27,7 @@ import { LanguageSwitcher } from "@/components/base/language-switcher/language-s
 import { ThemeSwitcher } from "@/components/base/theme-switcher/theme-switcher";
 import { GoWindLogo } from "@/components/foundations/logo/gowind-logo";
 import type { User } from "@/api/auth";
+import { usePwaInstall } from "@/hooks/use-pwa-install";
 import { MARKETING_HOME_PATH } from "@/lib/paths";
 import { useT } from "@/providers/locale-provider";
 import { cx } from "@/utils/cx";
@@ -84,6 +86,7 @@ export const HeaderMobileMenu = ({
     lightTrigger,
 }: HeaderMobileMenuProps) => {
     const t = useT();
+    const { install, available } = usePwaInstall();
     const close = () => onOpenChange(false);
 
     const appItems = appNavItems.map((item) => ({
@@ -215,6 +218,17 @@ export const HeaderMobileMenu = ({
                                                 >
                                                     {t("common.nav.accountSettings")}
                                                 </Dropdown.Item>
+                                                {!available ? null : (
+                                                    <Dropdown.Item
+                                                        icon={Download01}
+                                                        onAction={() => {
+                                                            close();
+                                                            void install();
+                                                        }}
+                                                    >
+                                                        {t("pwaInstall.install")}
+                                                    </Dropdown.Item>
+                                                )}
                                                 <Dropdown.Item icon={LogOut01} onAction={() => { close(); onLogout(); }}>
                                                     {t("common.nav.logOut")}
                                                 </Dropdown.Item>
