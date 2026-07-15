@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from "react-router";
+import { PwaInstallBanner } from "@/components/application/pwa-install-banner";
 import { Footer } from "@/components/marketing/footer/footer";
 import { Header } from "@/components/marketing/header-navigation/header";
 import {
@@ -50,6 +51,7 @@ export const AppLayout = () => {
                 </div>
                 <Footer />
             </div>
+            <PwaInstallBanner />
         </div>
     );
 };

@@ -56,6 +56,7 @@ export default defineConfig(({ mode }) => {
                     short_name: "GoWind",
                     description: SITE_META.description,
                     start_url: "/go-time?source=pwa",
+                    id: "/",
                     scope: "/",
                     display: "standalone",
                     orientation: "portrait-primary",

@@ -814,6 +814,14 @@ export const contentFr = {
         acceptAll: "Tout accepter",
     },
 
+    pwaInstall: {
+        title: "Installer GoWind",
+        description: "Ajoutez GoWind à votre écran d'accueil pour accéder rapidement à vos fenêtres de vent.",
+        iosDescription: "Appuyez sur Partager, puis sur Sur l'écran d'accueil pour installer GoWind.",
+        install: "Installer",
+        dismiss: "Pas maintenant",
+    },
+
     onboarding: {
         progressAria: "Progression",
         stepCompleted: ", terminé",

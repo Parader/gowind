@@ -812,6 +812,14 @@ export const contentEn = {
         acceptAll: "Accept all",
     },
 
+    pwaInstall: {
+        title: "Install GoWind",
+        description: "Add GoWind to your home screen for quick access to your wind windows.",
+        iosDescription: "Tap Share, then Add to Home Screen to install GoWind.",
+        install: "Install",
+        dismiss: "Not now",
+    },
+
     onboarding: {
         progressAria: "Progress",
         stepCompleted: ", completed",
