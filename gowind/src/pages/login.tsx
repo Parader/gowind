@@ -10,12 +10,12 @@ import { useT } from "@/providers/locale-provider";
 import { trackAuthFailure, trackOAuthStarted } from "@/lib/analytics";
 
 export const Login = () => {
-    const { login, getGoogleLoginUrl, user, isLoading, hasSession } = useAuth();
+    const { login, getGoogleLoginUrl, user, isLoading } = useAuth();
     const t = useT();
     const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (isLoading || (hasSession && !user)) {
+    if (isLoading) {
         return (
             <main className="flex flex-1 items-center justify-center px-4 py-16">
                 <LoadingIndicator type="dot-circle" size="lg" label={t("common.actions.loading")} />
@@ -23,7 +23,8 @@ export const Login = () => {
         );
     }
 
-    if (user || hasSession) {
+    // Only bounce away when we actually have a verified user — not a bare token.
+    if (user) {
         return <Navigate to="/go-time" replace />;
     }
 

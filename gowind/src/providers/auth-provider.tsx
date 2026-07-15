@@ -88,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [hasSession, setHasSession] = useState(initial.hasSession);
     const navigate = useNavigate();
     const loadGeneration = useRef(0);
+    const bootstrapped = useRef(false);
 
     const applyUser = useCallback((nextUser: User | null, admin = false, options?: { clearToken?: boolean }) => {
         setUser(nextUser);
@@ -110,17 +111,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const loadUser = useCallback(
-        async (options?: { retries?: number }) => {
+        async (options?: { retries?: number; soft?: boolean }) => {
             const generation = ++loadGeneration.current;
             const retries = options?.retries ?? 3;
-            const token = getAuthToken();
-            setIsLoading(true);
+            const soft = options?.soft === true;
+            const tokenAtStart = getAuthToken();
 
-            if (!token) {
+            if (!soft) setIsLoading(true);
+
+            if (!tokenAtStart) {
                 if (generation !== loadGeneration.current) return null;
-                applyUser(null, false, { clearToken: false });
-                setHasSession(false);
-                setIsLoading(false);
+                // Don't wipe a user that was just set by login in another call.
+                if (!soft) {
+                    applyUser(null, false, { clearToken: false });
+                    setHasSession(false);
+                    setIsLoading(false);
+                }
                 return null;
             }
 
@@ -133,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const { user: nextUser, isAdmin: admin } = await authApi.getMe();
                     if (generation !== loadGeneration.current) return nextUser;
                     applyUser(nextUser, admin ?? false);
-                    setIsLoading(false);
+                    if (!soft) setIsLoading(false);
                     return nextUser;
                 } catch (err) {
                     lastError = err;
@@ -146,27 +152,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (generation !== loadGeneration.current) return null;
 
+            // Token changed since this request started (e.g. user just logged in) — ignore stale result.
+            if (getAuthToken() !== tokenAtStart) {
+                if (!soft) setIsLoading(false);
+                return getCachedUser();
+            }
+
             if (isUnauthorizedError(lastError)) {
                 applyUser(null);
-                setIsLoading(false);
+                if (!soft) setIsLoading(false);
                 return null;
             }
 
-            // Network/server blip: keep local session so killing Chrome does not log the user out.
+            // Network/server blip: keep local session.
             const cached = getCachedUser();
             if (cached) {
                 applyUser(cached, false, { clearToken: false });
             } else {
-                // Token still present — stay "has session" and avoid login bounce; user refetch later.
-                setHasSession(true);
+                setHasSession(Boolean(getAuthToken()));
             }
-            setIsLoading(false);
+            if (!soft) setIsLoading(false);
             return cached;
         },
         [applyUser]
     );
 
     useEffect(() => {
+        if (bootstrapped.current) return;
+        bootstrapped.current = true;
+
         const oauthToken = consumeOAuthTokenFromHash();
         if (oauthToken) {
             setAuthToken(oauthToken);
@@ -195,28 +209,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })();
     }, [loadUser, navigate]);
 
-    // Re-validate when the tab/app becomes visible again (mobile Chrome resume).
+    // Soft re-check on resume — never wipe a fresh login due to focus churn.
     useEffect(() => {
         const onVisible = () => {
             if (document.visibilityState !== "visible") return;
             if (!getAuthToken()) return;
-            void loadUser({ retries: 2 });
+            void loadUser({ retries: 2, soft: true });
         };
         document.addEventListener("visibilitychange", onVisible);
-        window.addEventListener("focus", onVisible);
-        return () => {
-            document.removeEventListener("visibilitychange", onVisible);
-            window.removeEventListener("focus", onVisible);
-        };
+        return () => document.removeEventListener("visibilitychange", onVisible);
     }, [loadUser]);
 
     const login = useCallback(
         async (email: string, password: string) => {
+            loadGeneration.current += 1; // cancel in-flight /auth/me that could clear this session
             const { user: nextUser, token } = await authApi.login(email, password);
             setAuthToken(token);
             setHasSession(true);
             requestPersistentStorage();
             applyUser(nextUser);
+            setIsLoading(false);
             trackAuthSuccess(AnalyticsEvents.userLoggedIn, "email");
             navigate("/go-time");
         },
@@ -225,11 +237,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signup = useCallback(
         async (email: string, password: string, name?: string) => {
+            loadGeneration.current += 1;
             const { user: nextUser, token } = await authApi.signup(email, password, name);
             setAuthToken(token);
             setHasSession(true);
             requestPersistentStorage();
             applyUser(nextUser);
+            setIsLoading(false);
             trackAuthSuccess(AnalyticsEvents.userSignedUp, "email");
             navigate("/go-time");
         },
@@ -237,12 +251,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const logout = useCallback(async () => {
+        loadGeneration.current += 1;
         try {
             await authApi.logout();
         } catch {
             /* still clear local session */
         }
         applyUser(null);
+        setIsLoading(false);
         track(AnalyticsEvents.userLoggedOut);
         navigate("/");
     }, [navigate, applyUser]);
